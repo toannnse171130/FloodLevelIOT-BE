@@ -17,11 +17,11 @@ namespace Infrastructure.Repositories
 {
     public class UserRepository : GenericRepository<User>, IUserRepository
     {
-        private readonly ManageDBContext _context;
+        private readonly AppDbContext _context;
         private readonly IFileProvider _fileProvider;
         private readonly IMapper _mapper;
 
-        public UserRepository(ManageDBContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
+        public UserRepository(AppDbContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
         {
             _context = context;
             _fileProvider = fileProvider;

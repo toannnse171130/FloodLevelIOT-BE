@@ -16,11 +16,11 @@ namespace Infrastructure.Repositories
 {
     public class ScheduleRepository : GenericRepository<MaintenanceSchedule>, IScheduleRepository
     {
-        private readonly ManageDBContext _context;
+        private readonly AppDbContext _context;
         private readonly IFileProvider _fileProvider;
         private readonly IMapper _mapper;
 
-        public ScheduleRepository(ManageDBContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
+        public ScheduleRepository(AppDbContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
         {
             _context = context;
             _fileProvider = fileProvider;

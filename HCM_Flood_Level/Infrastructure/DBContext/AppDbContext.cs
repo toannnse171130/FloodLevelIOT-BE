@@ -1,18 +1,14 @@
 using Core.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.DBContext
 {
-    public class ManageDBContext : DbContext
+    public class AppDbContext : DbContext
     {
-        public ManageDBContext(DbContextOptions<ManageDBContext> options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
+
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Role> Roles { get; set; }
         public virtual DbSet<Location> Locations { get; set; }
@@ -22,6 +18,8 @@ namespace Infrastructure.DBContext
         public virtual DbSet<MaintenanceSchedule> MaintenanceSchedules { get; set; }
         public virtual DbSet<History> Histories { get; set; }
         public virtual DbSet<Area> Areas { get; set; }
+        public virtual DbSet<SensorReading> SensorReadings { get; set; }
+        public virtual DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -60,12 +58,13 @@ namespace Infrastructure.DBContext
             );
             modelBuilder.Entity<History>().ToTable("history");
             modelBuilder.Entity<Area>().ToTable("areas");
+            modelBuilder.Entity<SensorReading>().ToTable("sensorreadings");
+            modelBuilder.Entity<Report>().ToTable("report");
 
             modelBuilder.Entity<Sensor>()
                 .HasIndex(s => s.SensorCode)
                 .IsUnique();
 
-            // Configure relationships
             modelBuilder.Entity<Location>()
                 .HasOne(l => l.Area)
                 .WithMany(a => a.Locations)
@@ -118,15 +117,6 @@ namespace Infrastructure.DBContext
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_MaintenanceSchedule_AssignedTechnician");
 
-            // Ensure SensorReading has key if mapped in this context
-            if (modelBuilder.Model.GetEntityTypes().Any(e => e.ClrType == typeof(Core.Entities.SensorReading)))
-            {
-                modelBuilder.Entity<SensorReading>(entity =>
-                {
-                    entity.HasKey(e => e.ReadingId);
-                });
-            }
-
             ConfigureColumnNames(modelBuilder);
         }
 
@@ -157,7 +147,6 @@ namespace Infrastructure.DBContext
                 entity.Property(e => e.PriorityId).HasColumnName("priority_id");
                 entity.Property(e => e.DisplayName).HasColumnName("display_name");
             });
-
 
             modelBuilder.Entity<Location>(entity =>
             {
@@ -237,6 +226,28 @@ namespace Infrastructure.DBContext
                     .HasColumnName("severity")
                     .HasDefaultValue(Severity.Safe)
                     .HasConversion<string>();
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<SensorReading>(entity =>
+            {
+                entity.HasKey(e => e.ReadingId);
+                entity.Property(e => e.ReadingId).HasColumnName("reading_id");
+                entity.Property(e => e.SensorId).HasColumnName("sensor_id");
+                entity.Property(e => e.Status).HasColumnName("status");
+                entity.Property(e => e.WaterLevelCm).HasColumnName("water_level_cm");
+                entity.Property(e => e.BatteryPercent).HasColumnName("battery_percent");
+                entity.Property(e => e.SignalStrength).HasColumnName("signal_strength");
+                entity.Property(e => e.RecordedAt).HasColumnName("recorded_at").ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<Report>(entity =>
+            {
+                entity.HasKey(e => e.ReportId);
+                entity.Property(e => e.ReportId).HasColumnName("report_id");
+                entity.Property(e => e.Description).HasColumnName("description");
+                entity.Property(e => e.ForecastRiskLevel).HasColumnName("forecast_risk_level");
+                entity.Property(e => e.ForecastDataJson).HasColumnName("forecast_data_json");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
             });
         }

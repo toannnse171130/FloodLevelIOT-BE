@@ -11,7 +11,7 @@ namespace Infrastructure.Repositories
 {
     public class LocationRepository : GenericRepository<Location>, ILocationRepository
     {
-        public LocationRepository(ManageDBContext context) : base(context)
+        public LocationRepository(AppDbContext context) : base(context)
         {
         }
     }

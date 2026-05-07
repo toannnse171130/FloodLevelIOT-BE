@@ -1,35 +1,25 @@
 using Core.Interfaces;
-using Core.Interfaces;
 using Core.Services;
 using Infrastructure;
 using Infrastructure.DBContext;
 using Infrastructure.Repositories;
-using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using WebAPI.Extensions;
 using WebAPI.Middleware;
 
-
-
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// 24/03Dependency Injection for application services and repositories
+// Dependency Injection for application services and repositories
 builder.Services.AddScoped<ISensorReadingService, SensorReadingService>();
 builder.Services.AddScoped<ISensorRepository, SensorRepository>();
 builder.Services.AddScoped<ISensorReadingRepository, SensorReadingRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
-
-builder.Services.AddDbContext<EventsDBContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("EventsDb")));
-
 
 
 

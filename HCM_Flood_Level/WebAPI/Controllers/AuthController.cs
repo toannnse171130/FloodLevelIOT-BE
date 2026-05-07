@@ -17,14 +17,14 @@ namespace WebAPI.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly ManageDBContext _context;
+        private readonly AppDbContext _context;
         private readonly ITokenService _tokenService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly INotificationService _notificationService;
         private readonly IMapper _mapper;
 
-        public AuthController(ManageDBContext context, ITokenService tokenService, IUnitOfWork unitOfWork, IConfiguration configuration, INotificationService notificationService, IMapper mapper)
+        public AuthController(AppDbContext context, ITokenService tokenService, IUnitOfWork unitOfWork, IConfiguration configuration, INotificationService notificationService, IMapper mapper)
         {
             _context = context;
             _tokenService = tokenService;

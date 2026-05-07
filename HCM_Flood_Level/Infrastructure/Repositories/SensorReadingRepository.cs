@@ -1,28 +1,22 @@
-﻿using Core.Entities;
+using Core.Entities;
 using Core.Interfaces;
 using Infrastructure.DBContext;
-using System;
 
 namespace Infrastructure.Repositories
 {
     public class SensorReadingRepository : ISensorReadingRepository
     {
-        
+        private readonly AppDbContext _context;
 
-
-        private readonly ManageDBContext _context;
-        private readonly EventsDBContext _eventsContext;
-
-
-
-        public SensorReadingRepository(EventsDBContext eventsDBContext)
+        public SensorReadingRepository(AppDbContext context)
         {
-            _eventsContext = eventsDBContext; 
+            _context = context;
         }
+
         public async Task AddAsync(SensorReading reading)
         {
-            await _eventsContext.SensorReadings.AddAsync(reading);
-            await _eventsContext.SaveChangesAsync();
+            await _context.SensorReadings.AddAsync(reading);
+            await _context.SaveChangesAsync();
         }
     }
 }

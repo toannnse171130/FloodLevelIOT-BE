@@ -16,17 +16,15 @@ namespace Infrastructure.Repositories
 {
     public class SensorRepository : GenericRepository<Sensor>, ISensorRepository
     {
-        private readonly ManageDBContext _context;
-        private readonly EventsDBContext _eventsContext;
+        private readonly AppDbContext _context;
         private readonly IFileProvider _fileProvider;
         private readonly IMapper _mapper;
         private readonly IMapsService _mapsService;
         private readonly IScheduleRepository _maintenanceScheduleRepository;
 
-        public SensorRepository(ManageDBContext context, EventsDBContext eventsContext, IFileProvider fileProvider, IMapper mapper, IMapsService mapsService, IScheduleRepository maintenanceScheduleRepository) : base(context)
+        public SensorRepository(AppDbContext context, IFileProvider fileProvider, IMapper mapper, IMapsService mapsService, IScheduleRepository maintenanceScheduleRepository) : base(context)
         {
             _context = context;
-            _eventsContext = eventsContext;
             _fileProvider = fileProvider;
             _mapper = mapper;
             _mapsService = mapsService;
@@ -207,7 +205,7 @@ namespace Infrastructure.Repositories
 
             var ids = sensorIds.Distinct().ToList();
 
-            var latest = await _eventsContext.SensorReadings
+            var latest = await _context.SensorReadings
                 .Where(r => ids.Contains(r.SensorId))
                 .GroupBy(r => r.SensorId)
                 .Select(g => g.OrderByDescending(r => r.RecordedAt).FirstOrDefault())
@@ -224,13 +222,13 @@ namespace Infrastructure.Repositories
         public async Task AddSensorReadingAsync(SensorReading reading)
         {
             if (reading == null) return;
-            await _eventsContext.SensorReadings.AddAsync(reading);
-            await _eventsContext.SaveChangesAsync();
+            await _context.SensorReadings.AddAsync(reading);
+            await _context.SaveChangesAsync();
         }
 
         public async Task PruneSensorReadingsAsync(int sensorId, int maxEntries)
         {
-            var readings = await _eventsContext.SensorReadings
+            var readings = await _context.SensorReadings
                 .Where(r => r.SensorId == sensorId)
                 .OrderByDescending(r => r.RecordedAt)
                 .ToListAsync();
@@ -238,8 +236,8 @@ namespace Infrastructure.Repositories
             if (readings.Count <= maxEntries) return;
 
             var toDelete = readings.Skip(maxEntries).ToList();
-            _eventsContext.SensorReadings.RemoveRange(toDelete);
-            await _eventsContext.SaveChangesAsync();
+            _context.SensorReadings.RemoveRange(toDelete);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<double?> GetMaxHistoryLevelForSensorAsync(int sensorId)
@@ -247,7 +245,7 @@ namespace Infrastructure.Repositories
             var sensor = await _context.Sensors.FindAsync(sensorId);
             if (sensor == null || sensor.PlaceId == 0) return null;
 
-            var maxLevel = await _eventsContext.Histories
+            var maxLevel = await _context.Histories
                 .Where(h => h.LocationId == sensor.PlaceId)
                 .MaxAsync(h => (float?)h.MaxWaterLevel);
 
@@ -257,8 +255,8 @@ namespace Infrastructure.Repositories
         public async Task AddHistoryAsync(History history)
         {
             if (history == null) return;
-            await _eventsContext.Histories.AddAsync(history);
-            await _eventsContext.SaveChangesAsync();
+            await _context.Histories.AddAsync(history);
+            await _context.SaveChangesAsync();
         }
     }
 }

@@ -11,12 +11,12 @@ namespace WebAPI.Controllers
     [ApiController]
     public class HistoryController : ControllerBase
     {
-        private readonly EventsDBContext _eventsContext;
+        private readonly AppDbContext _context;
         private readonly IMapper _mapper;
 
-        public HistoryController(EventsDBContext eventsContext, IMapper mapper)
+        public HistoryController(AppDbContext context, IMapper mapper)
         {
-            _eventsContext = eventsContext;
+            _context = context;
             _mapper = mapper;
         }
 
@@ -25,7 +25,7 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var histories = await _eventsContext.Histories
+                var histories = await _context.Histories
                     .OrderByDescending(e => e.Severity)
                     .ThenByDescending(e => e.CreatedAt)
                     .ToListAsync();

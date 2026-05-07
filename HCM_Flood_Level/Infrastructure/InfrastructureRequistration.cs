@@ -15,27 +15,15 @@ namespace Infrastructure
         {
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUnitOfWork, UnitOfWork>();
-            services.AddDbContext<ManageDBContext>(option =>
+            services.AddDbContext<AppDbContext>(option =>
             {
-                option.UseNpgsql(configuration.GetConnectionString("CoreDb"), npgsqlOptions =>
+                option.UseNpgsql(configuration.GetConnectionString("DefaultConnection"), npgsqlOptions =>
                 {
                     npgsqlOptions.CommandTimeout(120);
                     npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null);
                 });
                 option.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
-            }
-            );
-
-            services.AddDbContext<EventsDBContext>(option =>
-            {
-                option.UseNpgsql(configuration.GetConnectionString("EventsDb"), npgsqlOptions =>
-                {
-                    npgsqlOptions.CommandTimeout(120);
-                    npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorCodesToAdd: null);
-                });
-                option.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
-            }
-            );
+            });
 
             services.AddMemoryCache();
 
@@ -45,7 +33,7 @@ namespace Infrastructure
         public static async Task InfrastructureConfigMiddleware(IApplicationBuilder app)
         {
             using var scope = app.ApplicationServices.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ManageDBContext>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var env = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
             try
             {
@@ -60,23 +48,6 @@ namespace Infrastructure
                 if (env.IsDevelopment())
                 {
                     await context.Database.EnsureCreatedAsync();
-                }
-            }
-
-            var eventsContext = scope.ServiceProvider.GetRequiredService<EventsDBContext>();
-            try
-            {
-                var canConnectEvents = await eventsContext.Database.CanConnectAsync();
-                if (!canConnectEvents && env.IsDevelopment())
-                {
-                    await eventsContext.Database.EnsureCreatedAsync();
-                }
-            }
-            catch
-            {
-                if (env.IsDevelopment())
-                {
-                    await eventsContext.Database.EnsureCreatedAsync();
                 }
             }
         }

@@ -17,21 +17,18 @@ namespace Infrastructure.Services
 {
     public class RouteAvoidFloodService : IRouteAvoidFloodService
     {
-        private readonly ManageDBContext _manageContext;
-        private readonly EventsDBContext _eventsContext;
+        private readonly AppDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
         private readonly IOpenWeatherService _openWeatherService;
 
         public RouteAvoidFloodService(
-            ManageDBContext manageContext,
-            EventsDBContext eventsContext,
+            AppDbContext context,
             IHttpClientFactory httpClientFactory,
             Microsoft.Extensions.Configuration.IConfiguration config,
             IOpenWeatherService openWeatherService)
         {
-            _manageContext = manageContext;
-            _eventsContext = eventsContext;
+            _context = context;
             _httpClientFactory = httpClientFactory;
             _config = config;
             _openWeatherService = openWeatherService;
@@ -143,8 +140,8 @@ namespace Infrastructure.Services
         private async Task<List<FloodSensor>> GetFloodedSensorsAsync(double lat, double lng, string primaryRoutePoly, CancellationToken cancellationToken)
         {
             // Lấy sensor + vị trí
-            var sensors = await (from s in _manageContext.Sensors.AsNoTracking()
-                                 join l in _manageContext.Locations.AsNoTracking()
+            var sensors = await (from s in _context.Sensors.AsNoTracking()
+                                 join l in _context.Locations.AsNoTracking()
                                      on s.PlaceId equals l.PlaceId
                                  select new
                                  {
@@ -160,7 +157,7 @@ namespace Infrastructure.Services
                 return new List<FloodSensor>();
 
             var sensorIds = sensors.Select(x => x.SensorId).Distinct().ToList();
-            var latestReadings = await _eventsContext.SensorReadings
+            var latestReadings = await _context.SensorReadings
                 .AsNoTracking()
                 .Where(r => sensorIds.Contains(r.SensorId))
                 .GroupBy(r => r.SensorId)

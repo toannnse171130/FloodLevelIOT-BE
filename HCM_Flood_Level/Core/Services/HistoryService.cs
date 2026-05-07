@@ -9,10 +9,10 @@ namespace Core.Services
 {
     public class HistoryService : IHistoryService
     {
-        private readonly IEventsDBContext _context;
+        private readonly DbContext _context;
         private readonly ISensorRepository _sensorRepository;
 
-        public HistoryService(IEventsDBContext context, ISensorRepository sensorRepository)
+        public HistoryService(DbContext context, ISensorRepository sensorRepository)
         {
             _context = context;
             _sensorRepository = sensorRepository;
@@ -21,14 +21,14 @@ namespace Core.Services
         public async Task ProcessSensorReading(SensorReading reading)
         {
             var sensor = await _sensorRepository.GetAsync(reading.SensorId);
-            if (sensor == null) return; // Sensor not found
+            if (sensor == null) return;
 
-            // Ensure reading.RecordedAt is treated as UTC
             var recordedAtUtc = DateTime.SpecifyKind(reading.RecordedAt, DateTimeKind.Utc);
 
             Severity severity = DetermineSeverity(reading.WaterLevelCm, sensor.WarningThreshold, sensor.DangerThreshold);
 
-            var activeHistory = await _context.Histories
+            var histories = _context.Set<History>();
+            var activeHistory = await histories
                 .Where(h => h.LocationId == sensor.PlaceId && h.EndTime == null)
                 .FirstOrDefaultAsync();
 
@@ -39,7 +39,7 @@ namespace Core.Services
                     activeHistory.EndTime = recordedAtUtc;
                 }
             }
-            else // Warning or Danger
+            else
             {
                 if (activeHistory == null)
                 {
@@ -51,7 +51,7 @@ namespace Core.Services
                         Severity = severity,
                         CreatedAt = DateTime.UtcNow
                     };
-                    _context.Histories.Add(newHistory);
+                    histories.Add(newHistory);
                 }
                 else
                 {

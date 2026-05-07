@@ -16,11 +16,11 @@ namespace Infrastructure.Repositories
 {
     public class RequestRepository : GenericRepository<MaintenanceRequest>, IRequestRepository
     {
-        private readonly ManageDBContext _context;
+        private readonly AppDbContext _context;
         private readonly IFileProvider _fileProvider;
         private readonly IMapper _mapper;
 
-        public RequestRepository(ManageDBContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
+        public RequestRepository(AppDbContext context, IFileProvider fileProvider, IMapper mapper) : base(context)
         {
             _context = context;
             _fileProvider = fileProvider;

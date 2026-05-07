@@ -12,21 +12,19 @@ namespace Infrastructure.Repositories
 {
     public class AreaRepository : GenericRepository<Area>, IAreaRepository
     {
-        private readonly ManageDBContext _manageContext;
-        private readonly EventsDBContext _eventsContext;
+        private readonly AppDbContext _context;
 
-        public AreaRepository(ManageDBContext context, EventsDBContext eventsContext) : base(context)
+        public AreaRepository(AppDbContext context) : base(context)
         {
-            _manageContext = context;
-            _eventsContext = eventsContext;
+            _context = context;
         }
 
         public async Task<IReadOnlyList<AreaDTO>> GetAreaSensorReadingsAsync(int? areaId = null, CancellationToken cancellationToken = default)
         {
             var query =
-                from s in _manageContext.Sensors.AsNoTracking()
-                join l in _manageContext.Locations.AsNoTracking() on s.PlaceId equals l.PlaceId
-                join a in _manageContext.Areas.AsNoTracking() on l.AreaId equals a.AreaId
+                from s in _context.Sensors.AsNoTracking()
+                join l in _context.Locations.AsNoTracking() on s.PlaceId equals l.PlaceId
+                join a in _context.Areas.AsNoTracking() on l.AreaId equals a.AreaId
                 where areaId == null || a.AreaId == areaId
                 select new { Area = a, Location = l, Sensor = s };
 
@@ -64,7 +62,7 @@ namespace Infrastructure.Repositories
             if (sensorIds.Count == 0)
                 return new Dictionary<int, SensorReading>();
 
-            var latest = await _eventsContext.SensorReadings
+            var latest = await _context.SensorReadings
                 .AsNoTracking()
                 .Where(r => sensorIds.Contains(r.SensorId))
                 .GroupBy(r => r.SensorId)

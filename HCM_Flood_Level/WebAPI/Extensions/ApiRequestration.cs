@@ -2,6 +2,7 @@ using Core.Interfaces;
 using Core.Services;
 using Infrastructure.DBContext;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using WebAPI.Errors;
 using WebAPI.Models;
@@ -48,7 +49,7 @@ namespace WebAPI.Extensions
                 };
             });
 
-            services.AddScoped<IEventsDBContext, EventsDBContext>();
+            services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
             services.AddScoped<IHistoryService, HistoryService>();
 
             services.AddCors(opt =>

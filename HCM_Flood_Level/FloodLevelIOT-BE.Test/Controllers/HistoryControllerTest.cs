@@ -10,9 +10,9 @@ using WebAPI.Errors;
 
 namespace FloodLevelIOT_BE.Test.Controllers;
 
-internal sealed class HistoryTestEventsDbContext : EventsDBContext
+internal sealed class HistoryTestAppDbContext : AppDbContext
 {
-    public HistoryTestEventsDbContext(DbContextOptions<EventsDBContext> options) : base(options)
+    public HistoryTestAppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
 
@@ -31,13 +31,20 @@ internal sealed class HistoryTestEventsDbContext : EventsDBContext
             e.Property(x => x.Severity).HasConversion<string>();
         });
         modelBuilder.Ignore<Report>();
+        modelBuilder.Ignore<User>();
+        modelBuilder.Ignore<Role>();
+        modelBuilder.Ignore<Sensor>();
+        modelBuilder.Ignore<Area>();
+        modelBuilder.Ignore<Core.Entities.Priority>();
+        modelBuilder.Ignore<MaintenanceRequest>();
+        modelBuilder.Ignore<MaintenanceSchedule>();
     }
 }
 
 public class HistoryControllerTest
 {
-    private static DbContextOptions<EventsDBContext> CreateOptions()
-        => new DbContextOptionsBuilder<EventsDBContext>()
+    private static DbContextOptions<AppDbContext> CreateOptions()
+        => new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
@@ -65,7 +72,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetFloodHistory_WithValidLocationId_ReturnsOkWithHistoryData()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         context.Histories.AddRange(
             new History
             {
@@ -102,7 +109,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetFloodHistory_WithInvalidLocationId_ReturnsNotFound()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         var mapper = CreateTestMapper();
         var controller = new HistoryController(context, mapper);
 
@@ -116,7 +123,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetHistoryByDateRange_WithValidDates_ReturnsOkWithData()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         var t1 = new DateTime(2025, 3, 1, 12, 0, 0, DateTimeKind.Utc);
         var t2 = new DateTime(2025, 3, 2, 12, 0, 0, DateTimeKind.Utc);
         var t3 = new DateTime(2025, 3, 3, 12, 0, 0, DateTimeKind.Utc);
@@ -165,7 +172,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetMaxWaterLevelHistory_WithValidSensorId_ReturnsOkWithMaxLevel()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         context.Histories.Add(new History
         {
             HistoryId = 1,
@@ -191,7 +198,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetHistoryStatistics_WithValidLocationId_ReturnsOkWithStats()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         for (var i = 1; i <= 4; i++)
         {
             context.Histories.Add(new History
@@ -221,7 +228,7 @@ public class HistoryControllerTest
     [Fact]
     public async Task GetAllHistories_WhenMappingThrows_Returns500()
     {
-        await using var context = new HistoryTestEventsDbContext(CreateOptions());
+        await using var context = new HistoryTestAppDbContext(CreateOptions());
         context.Histories.Add(new History
         {
             HistoryId = 1,

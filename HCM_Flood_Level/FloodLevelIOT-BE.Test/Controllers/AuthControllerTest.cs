@@ -35,16 +35,16 @@ public class AuthControllerTest
         A.CallTo(() => _unitOfWork.ManageUserRepository).Returns(_userRepository);
     }
 
-    private static ManageDBContext CreateContext()
+    private static AppDbContext CreateContext()
     {
-        var options = new DbContextOptionsBuilder<ManageDBContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        return new ManageDBContext(options);
+        return new AppDbContext(options);
     }
 
     // Login Tests (4 tests)
-    private AuthController CreateController(ManageDBContext context)
+    private AuthController CreateController(AppDbContext context)
         => new(context, _tokenService, _unitOfWork, _configuration, _notificationService, _mapper);
 
     [Fact]

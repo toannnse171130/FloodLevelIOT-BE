@@ -14,13 +14,13 @@ namespace WebAPI.Controllers
     [Authorize]
     public class SensorReadingController : ControllerBase
     {
-        private readonly EventsDBContext _eventsContext;
+        private readonly AppDbContext _context;
         private readonly IMapper _mapper;
         private readonly IHistoryService _historyService;
 
-        public SensorReadingController(EventsDBContext eventsContext, IMapper mapper, IHistoryService historyService)
+        public SensorReadingController(AppDbContext context, IMapper mapper, IHistoryService historyService)
         {
-            _eventsContext = eventsContext;
+            _context = context;
             _mapper = mapper;
             _historyService = historyService;
         }
@@ -40,7 +40,7 @@ namespace WebAPI.Controllers
         {
             try
             {
-                var readings = await _eventsContext.SensorReadings
+                var readings = await _context.SensorReadings
                     .OrderByDescending(r => r.RecordedAt)
                     .ToListAsync();
 

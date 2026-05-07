@@ -22,23 +22,20 @@ namespace Infrastructure.Services
             PropertyNameCaseInsensitive = true
         };
 
-        private readonly ManageDBContext _manage;
-        private readonly EventsDBContext _events;
+        private readonly AppDbContext _context;
         private readonly IOpenWeatherService _openWeather;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
 
         public FloodForecastService(
-            ManageDBContext manage,
-            EventsDBContext events,
+            AppDbContext context,
             IOpenWeatherService openWeather,
             IUnitOfWork unitOfWork,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration)
         {
-            _manage = manage;
-            _events = events;
+            _context = context;
             _openWeather = openWeather;
             _unitOfWork = unitOfWork;
             _httpClientFactory = httpClientFactory;
@@ -64,7 +61,7 @@ namespace Infrastructure.Services
             var cosLat = Math.Cos(lat * Math.PI / 180.0);
             var lonDelta = effectiveRadiusKm / (111.0 * Math.Max(Math.Abs(cosLat), 0.01));
 
-            var nearbyLocations = await _manage.Locations
+            var nearbyLocations = await _context.Locations
                 .AsNoTracking()
                 .Where(l =>
                     (double)l.Latitude >= lat - latDelta &&
@@ -95,7 +92,7 @@ namespace Infrastructure.Services
                 .ToDictionary(x => x.PlaceId, x => x);
 
             var placeIds = locationById.Keys.ToList();
-            var sensors = await _manage.Sensors
+            var sensors = await _context.Sensors
                 .AsNoTracking()
                 .Where(s => placeIds.Contains(s.PlaceId))
                 .Select(s => new
@@ -120,7 +117,7 @@ namespace Infrastructure.Services
                 .ToList();
 
             var fiveYearsAgo = DateTime.UtcNow.AddYears(-5);
-            var histories = await _events.Histories
+            var histories = await _context.Histories
                 .AsNoTracking()
                 .Where(h => placeIds.Contains(h.LocationId) && h.StartTime >= fiveYearsAgo)
                 .OrderByDescending(h => h.StartTime)
@@ -233,16 +230,16 @@ namespace Infrastructure.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _events.Reports.AddAsync(report, cancellationToken);
+            await _context.Reports.AddAsync(report, cancellationToken);
             try
             {
-                await _events.SaveChangesAsync(cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex) when (IsMissingReportTable(ex))
             {
-                // Auto-heal: create report table on EventsDb once, then retry save.
+                // Auto-heal: create report table if missing, then retry save.
                 await EnsureReportTableExistsAsync(cancellationToken);
-                await _events.SaveChangesAsync(cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
             }
 
             return new FloodForecastResponseDto
@@ -442,7 +439,7 @@ ALTER TABLE report ADD COLUMN IF NOT EXISTS forecast_risk_level TEXT NULL;
 ALTER TABLE report ADD COLUMN IF NOT EXISTS forecast_data_json TEXT NULL;
 ";
 
-            await _events.Database.ExecuteSqlRawAsync(sql, cancellationToken);
+            await _context.Database.ExecuteSqlRawAsync(sql, cancellationToken);
         }
     }
 }

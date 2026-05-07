@@ -11,9 +11,9 @@ using WebAPI.Errors;
 
 namespace FloodLevelIOT_BE.Test.Controllers;
 
-internal sealed class TestEventsDbContext : EventsDBContext
+internal sealed class TestAppDbContextForSensorReading : AppDbContext
 {
-    public TestEventsDbContext(DbContextOptions<EventsDBContext> options) : base(options)
+    public TestAppDbContextForSensorReading(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
 
@@ -27,13 +27,20 @@ internal sealed class TestEventsDbContext : EventsDBContext
         });
         modelBuilder.Ignore<History>();
         modelBuilder.Ignore<Report>();
+        modelBuilder.Ignore<User>();
+        modelBuilder.Ignore<Role>();
+        modelBuilder.Ignore<Sensor>();
+        modelBuilder.Ignore<Area>();
+        modelBuilder.Ignore<Core.Entities.Priority>();
+        modelBuilder.Ignore<MaintenanceRequest>();
+        modelBuilder.Ignore<MaintenanceSchedule>();
     }
 }
 
 public class SensorReadingControllerTest
 {
-    private static DbContextOptions<EventsDBContext> CreateOptions()
-        => new DbContextOptionsBuilder<EventsDBContext>()
+    private static DbContextOptions<AppDbContext> CreateOptions()
+        => new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
 
@@ -59,7 +66,7 @@ public class SensorReadingControllerTest
     }
 
     private static SensorReadingController CreateController(
-        EventsDBContext context,
+        AppDbContext context,
         IMapper mapper,
         IHistoryService historyService)
         => new(context, mapper, historyService);
@@ -67,7 +74,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetLatestReadings_WithValidSensorIds_ReturnsOkWithReadings()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         context.SensorReadings.AddRange(
             new SensorReading
             {
@@ -106,7 +113,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetLatestReadings_WithInvalidSensorIds_ReturnsNotFound()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         var mapper = CreateTestMapper();
         var history = A.Fake<IHistoryService>();
         var controller = CreateController(context, mapper, history);
@@ -122,7 +129,7 @@ public class SensorReadingControllerTest
     [Fact]
     public void AddSensorReading_WithValidData_ReturnsOkAndAddsReading()
     {
-        using var context = new TestEventsDbContext(CreateOptions());
+        using var context = new TestAppDbContextForSensorReading(CreateOptions());
         var mapper = CreateTestMapper();
         var history = A.Fake<IHistoryService>();
         var controller = CreateController(context, mapper, history);
@@ -142,7 +149,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetHistoryReadings_WithValidSensorId_ReturnsOkWithHistoryData()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         var reading = new SensorReading
         {
             ReadingId = 1,
@@ -170,7 +177,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task PruneSensorReadings_WithValidSensorId_ReturnsOkAndPrunesOldData()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         var older = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var newer = new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         context.SensorReadings.AddRange(
@@ -211,7 +218,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetAllSensorReadings_WhenMappingThrows_Returns500()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         context.SensorReadings.Add(
             new SensorReading
             {
@@ -242,7 +249,7 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetAllSensorReadings_WhenHistoryServiceThrows_Returns500()
     {
-        await using var context = new TestEventsDbContext(CreateOptions());
+        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         context.SensorReadings.Add(
             new SensorReading
             {
