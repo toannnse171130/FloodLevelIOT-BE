@@ -65,3 +65,7 @@ nunit-*.xml
 
 **/bin/
 **/obj/
+
+appsettings.json
+appsettings.*.json
+HCM_Flood_Level/WebAPI/appsettings.json

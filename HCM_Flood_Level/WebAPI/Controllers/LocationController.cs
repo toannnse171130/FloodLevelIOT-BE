@@ -29,12 +29,8 @@ namespace WebAPI.Controllers
             try
             {
                 var locations = (await _unitOfWork.LocationRepository.GetAllAsync(l => l.Area)).ToList();
-                if (locations != null && locations.Any())
-                {
-                    var result = _mapper.Map<IReadOnlyList<Location>, IReadOnlyList<LocationDTO>>(locations);
-                    return Ok(result);
-                }
-                return NotFound(new BaseCommentResponse(404, "Không tìm thấy địa điểm"));
+                var result = _mapper.Map<IReadOnlyList<Location>, IReadOnlyList<LocationDTO>>(locations ?? new List<Location>());
+                return Ok(result);
             }
             catch (Exception ex)
             {
