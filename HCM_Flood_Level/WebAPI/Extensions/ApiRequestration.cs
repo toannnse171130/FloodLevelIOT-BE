@@ -52,16 +52,6 @@ namespace WebAPI.Extensions
             services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
             services.AddScoped<IHistoryService, HistoryService>();
 
-            services.AddCors(opt =>
-            {
-                opt.AddPolicy("CorsPolicy", pol =>
-                {
-                    pol.AllowAnyHeader()
-                       .AllowAnyMethod()
-                       .AllowAnyOrigin(); // Allow all origins for Swagger and API access
-                });
-            });
-
             return services;
         }
     }
