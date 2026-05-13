@@ -50,6 +50,7 @@ namespace WebAPI.Models
                 }))
                 .ForMember(a => a.InstalledAt, a => a.MapFrom(b => b.InstalledAt ?? b.CreatedAt))
                 .ForMember(a => a.CommissionedAt, a => a.MapFrom(b => b.CreatedAt))
+                .ForMember(a => a.TechnicianId, a => a.MapFrom(b => b.TechnicianId))
                 .ForMember(a => a.InstalledByStaff, a => a.MapFrom(b => b.Technician != null ? b.Technician.FullName : string.Empty))
                 .ForMember(a => a.Location, a => a.MapFrom(b => b.Location))
                 .ForMember(d => d.WaterLevel, opt => opt.MapFrom((src, dest, destMember, ctx) =>

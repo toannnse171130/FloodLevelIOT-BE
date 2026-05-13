@@ -34,6 +34,7 @@ namespace Core.DTOs
         // Lich su & Vi tri
         public DateTime? InstalledAt { get; set; } // ngay lap dat
         public DateTime CommissionedAt { get; set; } // ngay van hanh
+        public int? TechnicianId { get; set; }
         public string InstalledByStaff { get; set; }
         public LocationDTO Location { get; set; }
         //Bao tri & trang thai
