@@ -24,6 +24,10 @@ namespace Infrastructure.Repositories
 
         public IAreaRepository AreaRepository { get; }
 
+        public IHistoryRepository HistoryRepository { get; }
+
+        public ISensorReadingRepository SensorReadingRepository { get; }
+
         public UnitOfWork(AppDbContext context, IFileProvider fileProvider, IMapper mapper, IMapsService mapsService)
         {
             _context = context;
@@ -36,6 +40,8 @@ namespace Infrastructure.Repositories
             LocationRepository = new LocationRepository(_context);
             ManageRequestRepository = new RequestRepository(_context, _fileProvider, _mapper);
             AreaRepository = new AreaRepository(_context);
+            HistoryRepository = new HistoryRepository(_context);
+            SensorReadingRepository = new SensorReadingRepository(_context);
         }
     }
 }

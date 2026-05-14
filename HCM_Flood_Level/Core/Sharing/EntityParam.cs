@@ -13,6 +13,7 @@ namespace Core.Sharing
 
         //Filter
         public int? RoleId { get; set; }
+        public int? SensorId { get; set; }
         public string? ScheduleStatus { get; set; }
         public string? ScheduleType { get; set; }
         public string? ScheduleMode { get; set; }

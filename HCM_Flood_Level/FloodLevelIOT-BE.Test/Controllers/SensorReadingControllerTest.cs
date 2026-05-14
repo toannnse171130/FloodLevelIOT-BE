@@ -2,55 +2,24 @@ using AutoMapper;
 using Core.DTOs;
 using Core.Entities;
 using Core.Interfaces;
+using Core.Sharing;
 using FakeItEasy;
-using Infrastructure.DBContext;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WebAPI.Controllers;
 using WebAPI.Errors;
+using WebAPI.Helpers;
 
 namespace FloodLevelIOT_BE.Test.Controllers;
 
-internal sealed class TestAppDbContextForSensorReading : AppDbContext
-{
-    public TestAppDbContextForSensorReading(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Ignore<Location>();
-        modelBuilder.Entity<SensorReading>(entity =>
-        {
-            entity.HasKey(e => e.ReadingId);
-            entity.Ignore(e => e.Sensor);
-        });
-        modelBuilder.Ignore<History>();
-        modelBuilder.Ignore<Report>();
-        modelBuilder.Ignore<User>();
-        modelBuilder.Ignore<Role>();
-        modelBuilder.Ignore<Sensor>();
-        modelBuilder.Ignore<Area>();
-        modelBuilder.Ignore<Core.Entities.Priority>();
-        modelBuilder.Ignore<MaintenanceRequest>();
-        modelBuilder.Ignore<MaintenanceSchedule>();
-    }
-}
-
 public class SensorReadingControllerTest
 {
-    private static DbContextOptions<AppDbContext> CreateOptions()
-        => new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-
     private static IMapper CreateTestMapper()
     {
         var mapper = A.Fake<IMapper>();
         A.CallTo(() => mapper.Map<List<SensorReadingDTO>>(A<object>._))
             .ReturnsLazily((object source) =>
             {
-                var list = (List<SensorReading>)source;
+                var list = source as IEnumerable<SensorReading> ?? new List<SensorReading>();
                 return list.Select(r => new SensorReadingDTO
                 {
                     ReadingId = r.ReadingId,
@@ -65,74 +34,58 @@ public class SensorReadingControllerTest
         return mapper;
     }
 
-    private static SensorReadingController CreateController(
-        AppDbContext context,
-        IMapper mapper,
-        IHistoryService historyService)
-        => new(context, mapper, historyService);
+    private static (IUnitOfWork unitOfWork, ISensorReadingRepository readingRepo) CreateFakeUnitOfWork()
+    {
+        var readingRepo = A.Fake<ISensorReadingRepository>();
+        var unitOfWork = A.Fake<IUnitOfWork>();
+        A.CallTo(() => unitOfWork.SensorReadingRepository).Returns(readingRepo);
+        return (unitOfWork, readingRepo);
+    }
 
     [Fact]
     public async Task GetLatestReadings_WithValidSensorIds_ReturnsOkWithReadings()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        context.SensorReadings.AddRange(
-            new SensorReading
-            {
-                ReadingId = 1,
-                SensorId = 10,
-                Status = "Online",
-                WaterLevelCm = 5,
-                BatteryPercent = 90,
-                SignalStrength = "-70",
-                RecordedAt = new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Utc)
-            },
-            new SensorReading
-            {
-                ReadingId = 2,
-                SensorId = 20,
-                Status = "Online",
-                WaterLevelCm = 8,
-                BatteryPercent = 85,
-                SignalStrength = "-65",
-                RecordedAt = new DateTime(2025, 6, 2, 12, 0, 0, DateTimeKind.Utc)
-            });
-        await context.SaveChangesAsync();
+        var readings = new List<SensorReading>
+        {
+            new() { ReadingId = 1, SensorId = 10, Status = "Online", WaterLevelCm = 5, BatteryPercent = 90, SignalStrength = "-70", RecordedAt = new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Utc) },
+            new() { ReadingId = 2, SensorId = 20, Status = "Online", WaterLevelCm = 8, BatteryPercent = 85, SignalStrength = "-65", RecordedAt = new DateTime(2025, 6, 2, 12, 0, 0, DateTimeKind.Utc) }
+        };
 
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(2);
+
+        var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
         var result = await controller.GetAllSensorReadings();
 
-        var ok = Assert.IsType<OkObjectResult>(result.Result);
-        var payload = Assert.IsType<List<SensorReadingDTO>>(ok.Value);
-        Assert.Equal(2, payload.Count);
-        A.CallTo(() => history.ProcessSensorReading(A<SensorReading>._)).MustHaveHappened(2, Times.Exactly);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<Pagination<SensorReadingDTO>>(ok.Value);
+        Assert.Equal(2, payload.TotalCount);
     }
 
     [Fact]
-    public async Task GetLatestReadings_WithInvalidSensorIds_ReturnsNotFound()
+    public async Task GetLatestReadings_WithNoData_ReturnsOkWithEmptyList()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(new List<SensorReading>());
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(0);
+
+        var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
         var result = await controller.GetAllSensorReadings();
 
-        var ok = Assert.IsType<OkObjectResult>(result.Result);
-        var payload = Assert.IsType<List<SensorReadingDTO>>(ok.Value);
-        Assert.Empty(payload);
-        A.CallTo(() => history.ProcessSensorReading(A<SensorReading>._)).MustNotHaveHappened();
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<Pagination<SensorReadingDTO>>(ok.Value);
+        Assert.Empty(payload.Data);
+        Assert.Equal(0, payload.TotalCount);
     }
 
     [Fact]
-    public void AddSensorReading_WithValidData_ReturnsOkAndAddsReading()
+    public void GetMqttLog_ReturnsOkWithCountAndMessages()
     {
-        using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+        var (unitOfWork, _) = CreateFakeUnitOfWork();
+        var controller = new SensorReadingController(unitOfWork, A.Fake<IMapper>());
 
         var result = controller.GetMqttLog();
 
@@ -149,129 +102,89 @@ public class SensorReadingControllerTest
     [Fact]
     public async Task GetHistoryReadings_WithValidSensorId_ReturnsOkWithHistoryData()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        var reading = new SensorReading
+        var readings = new List<SensorReading>
         {
-            ReadingId = 1,
-            SensorId = 42,
-            Status = "Online",
-            WaterLevelCm = 12,
-            BatteryPercent = 80,
-            SignalStrength = "-60",
-            RecordedAt = new DateTime(2025, 3, 1, 8, 0, 0, DateTimeKind.Utc)
+            new() { ReadingId = 1, SensorId = 42, Status = "Online", WaterLevelCm = 12, BatteryPercent = 80, SignalStrength = "-60", RecordedAt = new DateTime(2025, 3, 1, 8, 0, 0, DateTimeKind.Utc) }
         };
-        context.SensorReadings.Add(reading);
-        await context.SaveChangesAsync();
 
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(1);
 
-        var result = await controller.GetAllSensorReadings();
+        var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
-        Assert.IsType<OkObjectResult>(result.Result);
-        A.CallTo(() => history.ProcessSensorReading(A<SensorReading>.That.Matches(r => r.ReadingId == 1 && r.SensorId == 42)))
-            .MustHaveHappenedOnceExactly();
+        var result = await controller.GetAllSensorReadings(sensorId: 42);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<Pagination<SensorReadingDTO>>(ok.Value);
+        Assert.Single(payload.Data);
+        Assert.Equal(42, payload.Data[0].SensorId);
     }
 
     [Fact]
-    public async Task PruneSensorReadings_WithValidSensorId_ReturnsOkAndPrunesOldData()
+    public async Task PruneSensorReadings_OrderedByRecordedAtDesc_ReturnsCorrectOrder()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
         var older = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var newer = new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc);
-        context.SensorReadings.AddRange(
-            new SensorReading
-            {
-                ReadingId = 1,
-                SensorId = 1,
-                Status = "Online",
-                WaterLevelCm = 1,
-                BatteryPercent = 100,
-                SignalStrength = "-50",
-                RecordedAt = older
-            },
-            new SensorReading
-            {
-                ReadingId = 2,
-                SensorId = 1,
-                Status = "Online",
-                WaterLevelCm = 2,
-                BatteryPercent = 99,
-                SignalStrength = "-51",
-                RecordedAt = newer
-            });
-        await context.SaveChangesAsync();
+        // Repository returns already sorted (desc)
+        var readings = new List<SensorReading>
+        {
+            new() { ReadingId = 2, SensorId = 1, Status = "Online", WaterLevelCm = 2, BatteryPercent = 99, SignalStrength = "-51", RecordedAt = newer },
+            new() { ReadingId = 1, SensorId = 1, Status = "Online", WaterLevelCm = 1, BatteryPercent = 100, SignalStrength = "-50", RecordedAt = older }
+        };
 
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(2);
+
+        var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
         var result = await controller.GetAllSensorReadings();
 
-        var ok = Assert.IsType<OkObjectResult>(result.Result);
-        var payload = Assert.IsType<List<SensorReadingDTO>>(ok.Value);
-        Assert.Equal(2, payload.Count);
-        Assert.True(payload[0].RecordedAt > payload[1].RecordedAt);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var payload = Assert.IsType<Pagination<SensorReadingDTO>>(ok.Value);
+        Assert.Equal(2, payload.TotalCount);
+        Assert.True(payload.Data[0].RecordedAt > payload.Data[1].RecordedAt);
     }
 
     [Fact]
     public async Task GetAllSensorReadings_WhenMappingThrows_Returns500()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        context.SensorReadings.Add(
-            new SensorReading
-            {
-                ReadingId = 1,
-                SensorId = 1,
-                Status = "Online",
-                WaterLevelCm = 1,
-                BatteryPercent = 100,
-                SignalStrength = "-50",
-                RecordedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            });
-        await context.SaveChangesAsync();
+        var readings = new List<SensorReading>
+        {
+            new() { ReadingId = 1, SensorId = 1, Status = "Online", WaterLevelCm = 1, BatteryPercent = 100, SignalStrength = "-50", RecordedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }
+        };
+
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(1);
 
         var mapper = A.Fake<IMapper>();
         A.CallTo(() => mapper.Map<List<SensorReadingDTO>>(A<object>._))
             .Throws(new InvalidOperationException("Map failed"));
-        var history = A.Fake<IHistoryService>();
-        var controller = CreateController(context, mapper, history);
+
+        var controller = new SensorReadingController(unitOfWork, mapper);
 
         var result = await controller.GetAllSensorReadings();
 
-        var error = Assert.IsType<ObjectResult>(result.Result);
+        var error = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, error.StatusCode);
         var body = Assert.IsType<BaseCommentResponse>(error.Value);
         Assert.Equal(500, body.Statuscodes);
     }
 
     [Fact]
-    public async Task GetAllSensorReadings_WhenHistoryServiceThrows_Returns500()
+    public async Task GetAllSensorReadings_WhenRepositoryThrows_Returns500()
     {
-        await using var context = new TestAppDbContextForSensorReading(CreateOptions());
-        context.SensorReadings.Add(
-            new SensorReading
-            {
-                ReadingId = 1,
-                SensorId = 1,
-                Status = "Online",
-                WaterLevelCm = 1,
-                BatteryPercent = 100,
-                SignalStrength = "-50",
-                RecordedAt = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-            });
-        await context.SaveChangesAsync();
+        var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
+        A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._))
+            .Throws(new InvalidOperationException("DB failed"));
 
-        var mapper = CreateTestMapper();
-        var history = A.Fake<IHistoryService>();
-        A.CallTo(() => history.ProcessSensorReading(A<SensorReading>._))
-            .Throws(new InvalidOperationException("History failed"));
-        var controller = CreateController(context, mapper, history);
+        var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
         var result = await controller.GetAllSensorReadings();
 
-        var error = Assert.IsType<ObjectResult>(result.Result);
+        var error = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, error.StatusCode);
         var body = Assert.IsType<BaseCommentResponse>(error.Value);
         Assert.Equal(500, body.Statuscodes);

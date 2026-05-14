@@ -14,5 +14,7 @@ namespace Core.Interfaces
         ILocationRepository LocationRepository { get; }
         IRequestRepository ManageRequestRepository { get; }
         IAreaRepository AreaRepository { get; }
+        IHistoryRepository HistoryRepository { get; }
+        ISensorReadingRepository SensorReadingRepository { get; }
     }
 }

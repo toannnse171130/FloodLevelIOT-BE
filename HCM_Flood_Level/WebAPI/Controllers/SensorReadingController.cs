@@ -1,11 +1,11 @@
 using AutoMapper;
 using Core.DTOs;
-using Infrastructure.DBContext;
-using Microsoft.AspNetCore.Authorization;
 using Core.Interfaces;
+using Core.Sharing;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using WebAPI.Errors;
+using WebAPI.Helpers;
 
 namespace WebAPI.Controllers
 {
@@ -14,15 +14,13 @@ namespace WebAPI.Controllers
     [Authorize]
     public class SensorReadingController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        private readonly IHistoryService _historyService;
 
-        public SensorReadingController(AppDbContext context, IMapper mapper, IHistoryService historyService)
+        public SensorReadingController(IUnitOfWork unitOfWork, IMapper mapper)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _historyService = historyService;
         }
 
         /// <summary>
@@ -35,30 +33,37 @@ namespace WebAPI.Controllers
             return Ok(new { count = messages.Count, messages });
         }
 
+        /// <summary>
+        /// Lấy danh sách sensor readings có phân trang và lọc theo sensorId.
+        /// </summary>
         [HttpGet("sensor-readings")]
-        public async Task<ActionResult<List<SensorReadingDTO>>> GetAllSensorReadings()
+        public async Task<ActionResult> GetAllSensorReadings(
+            [FromQuery] int pagenumber = 1,
+            [FromQuery] int pagesize = 20,
+            [FromQuery] int? sensorId = null)
         {
             try
             {
-                var readings = await _context.SensorReadings
-                    .OrderByDescending(r => r.RecordedAt)
-                    .ToListAsync();
+                if (pagenumber <= 0 || pagesize <= 0)
+                    return BadRequest(new BaseCommentResponse(400, "Số trang và kích thước trang phải lớn hơn 0"));
 
+                var param = new EntityParam
+                {
+                    Pagenumber = pagenumber,
+                    Pagesize = pagesize,
+                    SensorId = sensorId
+                };
+
+                var readings = await _unitOfWork.SensorReadingRepository.GetAllAsync(param);
+                var total = await _unitOfWork.SensorReadingRepository.CountAsync(sensorId);
                 var result = _mapper.Map<List<SensorReadingDTO>>(readings);
 
-                // Process each reading through the HistoryService
-                foreach (var reading in readings)
-                {
-                    await _historyService.ProcessSensorReading(reading);
-                }
-
-                return Ok(result);
+                return Ok(new Pagination<SensorReadingDTO>(pagesize, pagenumber, total, result));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, new BaseCommentResponse(500, "Đã xảy ra lỗi máy chủ nội bộ!!!"));
+                return StatusCode(500, new BaseCommentResponse(500, $"Đã xảy ra lỗi máy chủ nội bộ: {ex.Message}"));
             }
         }
     }
 }
-
