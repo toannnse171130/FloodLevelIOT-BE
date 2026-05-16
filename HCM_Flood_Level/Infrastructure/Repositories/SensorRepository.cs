@@ -66,7 +66,7 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> AddNewSensorAsync(CreateSensorDTO dto)
+        public async Task<int> AddNewSensorAsync(CreateSensorDTO dto)
         {
             // 1. Find or create location
             var location = await _context.Locations
@@ -89,11 +89,11 @@ namespace Infrastructure.Repositories
             // 2. Prevent duplicate sensor for same location
             var duplicateLocation = await _context.Sensors.AnyAsync(s => s.PlaceId == location.PlaceId);
             if (duplicateLocation)
-                return false;
+                return 0;
 
             // 3. Create sensor
             var sensor = _mapper.Map<Sensor>(dto);
-            sensor.PlaceId = location.PlaceId; // Manually assign the PlaceId
+            sensor.PlaceId = location.PlaceId;
 
             sensor.InstalledAt = DateTime.UtcNow;
             sensor.CreatedAt = DateTime.UtcNow;
@@ -113,7 +113,7 @@ namespace Infrastructure.Repositories
             };
             await AddSensorReadingAsync(defaultReading);
 
-            return true;
+            return sensor.SensorId;
         }
 
         public async Task<bool> LocationExistsAsync(int placeId)

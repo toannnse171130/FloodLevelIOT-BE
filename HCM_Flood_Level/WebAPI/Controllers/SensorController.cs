@@ -124,12 +124,12 @@ namespace WebAPI.Controllers
                 if (dto.Latitude == 0 || dto.Longitude == 0)
                     return BadRequest(new BaseCommentResponse(400, "Vĩ độ và kinh độ là bắt buộc"));
 
-                var result = await _unitOfWork.ManageSensorRepository.AddNewSensorAsync(dto);
+                var sensorId = await _unitOfWork.ManageSensorRepository.AddNewSensorAsync(dto);
 
-                if (!result)
+                if (sensorId == 0)
                     return BadRequest(new BaseCommentResponse(400, "Tạo thiết bị không thành công."));
 
-                return Ok(new BaseCommentResponse(200, "Tạo thiết bị thành công"));
+                return Ok(new { StatusCode = 200, Message = "Tạo thiết bị thành công", SensorId = sensorId });
             }
             catch (Exception ex)
             {

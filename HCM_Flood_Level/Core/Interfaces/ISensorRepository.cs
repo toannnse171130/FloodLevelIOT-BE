@@ -19,7 +19,7 @@ namespace Core.Interfaces
         Task PruneSensorReadingsAsync(int sensorId, int maxEntries);
         Task<double?> GetMaxHistoryLevelForSensorAsync(int sensorId);
         Task AddHistoryAsync(History history);
-        Task<bool> AddNewSensorAsync(CreateSensorDTO dto);
+        Task<int> AddNewSensorAsync(CreateSensorDTO dto);
         Task<bool> LocationExistsAsync(int placeId);
         Task<bool> LocationHasSensorAsync(int placeId);
         Task<bool> UpdateSensorAsync(int id, UpdateSensorDTO dto);

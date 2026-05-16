@@ -210,7 +210,7 @@ public class SensorControllerTest
     [Fact]
     public async Task CreateDevice_WithValidData_ReturnsOkAndCreatesSensor()
     {
-        A.CallTo(() => _sensorRepository.AddNewSensorAsync(A<CreateSensorDTO>._)).Returns(true);
+        A.CallTo(() => _sensorRepository.AddNewSensorAsync(A<CreateSensorDTO>._)).Returns(1);
         var controller = new SensorController(_unitOfWork, _mapper);
         var dto = new CreateSensorDTO
         {
@@ -249,7 +249,7 @@ public class SensorControllerTest
     [Fact]
     public async Task CreateDevice_WithDuplicateSensorCode_ReturnsBadRequest()
     {
-        A.CallTo(() => _sensorRepository.AddNewSensorAsync(A<CreateSensorDTO>._)).Returns(false);
+        A.CallTo(() => _sensorRepository.AddNewSensorAsync(A<CreateSensorDTO>._)).Returns(0);
         var controller = new SensorController(_unitOfWork, _mapper);
         var dto = new CreateSensorDTO { SensorCode = "DUP", SensorName = "S1", SensorType = "Water", Latitude = 10m, Longitude = 106m };
 
