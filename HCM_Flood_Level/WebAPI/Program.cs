@@ -116,6 +116,9 @@ builder.Services.AddHttpContextAccessor();
 // Background generator for sensor readings (30-minute interval)
 // builder.Services.AddHostedService<WebAPI.Services.SensorReadingGeneratorService>();
 
+// Schedule notification job — checks hourly for overdue/due-soon schedules, sends email + SignalR
+builder.Services.AddHostedService<Infrastructure.Services.ScheduleNotificationJob>();
+
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"];
 

@@ -20,6 +20,7 @@ namespace Infrastructure.DBContext
         public virtual DbSet<Area> Areas { get; set; }
         public virtual DbSet<SensorReading> SensorReadings { get; set; }
         public virtual DbSet<Report> Reports { get; set; }
+        public virtual DbSet<NotificationLog> NotificationLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -60,6 +61,7 @@ namespace Infrastructure.DBContext
             modelBuilder.Entity<Area>().ToTable("areas");
             modelBuilder.Entity<SensorReading>().ToTable("sensorreadings");
             modelBuilder.Entity<Report>().ToTable("report");
+            modelBuilder.Entity<NotificationLog>().ToTable("notificationlogs");
 
             modelBuilder.Entity<Sensor>()
                 .HasIndex(s => s.SensorCode)
@@ -249,6 +251,17 @@ namespace Infrastructure.DBContext
                 entity.Property(e => e.ForecastRiskLevel).HasColumnName("forecast_risk_level");
                 entity.Property(e => e.ForecastDataJson).HasColumnName("forecast_data_json");
                 entity.Property(e => e.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+            });
+
+            modelBuilder.Entity<NotificationLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.ScheduleId).HasColumnName("schedule_id");
+                entity.Property(e => e.TechnicianId).HasColumnName("technician_id");
+                entity.Property(e => e.NotificationType).HasColumnName("notification_type");
+                entity.Property(e => e.SentAt).HasColumnName("sent_at");
+                entity.HasIndex(e => new { e.ScheduleId, e.NotificationType }).IsUnique();
             });
         }
     }
