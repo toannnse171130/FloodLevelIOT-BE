@@ -12,6 +12,6 @@ namespace Core.Interfaces
     {
         Task AddAsync(SensorReading reading);
         Task<IReadOnlyList<SensorReading>> GetAllAsync(EntityParam param);
-        Task<int> CountAsync(int? sensorId = null);
+        Task<int> CountAsync(int? sensorId = null, DateTime? startDate = null, DateTime? endDate = null);
     }
 }

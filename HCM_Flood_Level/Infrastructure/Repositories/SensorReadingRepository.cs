@@ -28,6 +28,12 @@ namespace Infrastructure.Repositories
             if (param.SensorId.HasValue)
                 query = query.Where(r => r.SensorId == param.SensorId.Value);
 
+            if (param.StartDate.HasValue)
+                query = query.Where(r => r.RecordedAt >= param.StartDate.Value);
+
+            if (param.EndDate.HasValue)
+                query = query.Where(r => r.RecordedAt <= param.EndDate.Value);
+
             return await query
                 .OrderByDescending(r => r.RecordedAt)
                 .Skip((param.Pagenumber - 1) * param.Pagesize)
@@ -35,12 +41,18 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<int> CountAsync(int? sensorId = null)
+        public async Task<int> CountAsync(int? sensorId = null, DateTime? startDate = null, DateTime? endDate = null)
         {
             var query = _context.SensorReadings.AsQueryable();
 
             if (sensorId.HasValue)
                 query = query.Where(r => r.SensorId == sensorId.Value);
+
+            if (startDate.HasValue)
+                query = query.Where(r => r.RecordedAt >= startDate.Value);
+
+            if (endDate.HasValue)
+                query = query.Where(r => r.RecordedAt <= endDate.Value);
 
             return await query.CountAsync();
         }

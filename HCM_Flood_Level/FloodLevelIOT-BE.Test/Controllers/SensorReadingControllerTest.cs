@@ -53,7 +53,7 @@ public class SensorReadingControllerTest
 
         var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
         A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
-        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(2);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._, A<DateTime?>._, A<DateTime?>._)).Returns(2);
 
         var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
@@ -69,7 +69,7 @@ public class SensorReadingControllerTest
     {
         var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
         A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(new List<SensorReading>());
-        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(0);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._, A<DateTime?>._, A<DateTime?>._)).Returns(0);
 
         var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
@@ -109,7 +109,7 @@ public class SensorReadingControllerTest
 
         var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
         A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
-        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(1);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._, A<DateTime?>._, A<DateTime?>._)).Returns(1);
 
         var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
@@ -135,7 +135,7 @@ public class SensorReadingControllerTest
 
         var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
         A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
-        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(2);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._, A<DateTime?>._, A<DateTime?>._)).Returns(2);
 
         var controller = new SensorReadingController(unitOfWork, CreateTestMapper());
 
@@ -157,7 +157,7 @@ public class SensorReadingControllerTest
 
         var (unitOfWork, readingRepo) = CreateFakeUnitOfWork();
         A.CallTo(() => readingRepo.GetAllAsync(A<EntityParam>._)).Returns(readings);
-        A.CallTo(() => readingRepo.CountAsync(A<int?>._)).Returns(1);
+        A.CallTo(() => readingRepo.CountAsync(A<int?>._, A<DateTime?>._, A<DateTime?>._)).Returns(1);
 
         var mapper = A.Fake<IMapper>();
         A.CallTo(() => mapper.Map<List<SensorReadingDTO>>(A<object>._))

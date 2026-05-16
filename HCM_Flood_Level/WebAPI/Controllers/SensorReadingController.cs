@@ -40,22 +40,26 @@ namespace WebAPI.Controllers
         public async Task<ActionResult> GetAllSensorReadings(
             [FromQuery] int pagenumber = 1,
             [FromQuery] int pagesize = 20,
-            [FromQuery] int? sensorId = null)
+            [FromQuery] int? sensorId = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null)
         {
             try
             {
                 if (pagenumber <= 0 || pagesize <= 0)
-                    return BadRequest(new BaseCommentResponse(400, "Số trang và kích thước trang phải lớn hơn 0"));
+                    return BadRequest(new BaseCommentResponse(400, "Số trang và kích thước trang ph��i lớn hơn 0"));
 
                 var param = new EntityParam
                 {
                     Pagenumber = pagenumber,
                     Pagesize = pagesize,
-                    SensorId = sensorId
+                    SensorId = sensorId,
+                    StartDate = startDate,
+                    EndDate = endDate
                 };
 
                 var readings = await _unitOfWork.SensorReadingRepository.GetAllAsync(param);
-                var total = await _unitOfWork.SensorReadingRepository.CountAsync(sensorId);
+                var total = await _unitOfWork.SensorReadingRepository.CountAsync(sensorId, startDate, endDate);
                 var result = _mapper.Map<List<SensorReadingDTO>>(readings);
 
                 return Ok(new Pagination<SensorReadingDTO>(pagesize, pagenumber, total, result));
