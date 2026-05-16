@@ -117,7 +117,7 @@ builder.Services.AddHttpContextAccessor();
 // builder.Services.AddHostedService<WebAPI.Services.SensorReadingGeneratorService>();
 
 // Schedule notification job — checks hourly for overdue/due-soon schedules, sends email + SignalR
-builder.Services.AddHostedService<Infrastructure.Services.ScheduleNotificationJob>();
+// builder.Services.AddHostedService<Infrastructure.Services.ScheduleNotificationJob>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwtSection["Key"];
