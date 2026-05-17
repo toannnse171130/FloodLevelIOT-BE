@@ -183,9 +183,6 @@ namespace Infrastructure.Repositories
             var schedule = await _context.MaintenanceSchedules.FindAsync(id);
             if (schedule == null) return false;
 
-            if (schedule.Status != "Completed")
-                return false;
-
             _context.MaintenanceSchedules.Remove(schedule);
             await _context.SaveChangesAsync();
             return true;
