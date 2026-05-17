@@ -175,6 +175,25 @@ namespace Infrastructure.Repositories
 
             schedule.Status = dto.Status;
             await _context.SaveChangesAsync();
+
+            // Auto-renew: create next month schedule when Auto schedule is completed
+            if (dto.Status == "Completed" && schedule.ScheduleMode == "Auto")
+            {
+                var newSchedule = new MaintenanceSchedule
+                {
+                    SensorId = schedule.SensorId,
+                    ScheduleType = schedule.ScheduleType,
+                    ScheduleMode = "Auto",
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    AssignedTechnicianId = schedule.AssignedTechnicianId,
+                    Status = "Scheduled",
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _context.MaintenanceSchedules.AddAsync(newSchedule);
+                await _context.SaveChangesAsync();
+            }
+
             return true;
         }
 
