@@ -102,7 +102,7 @@ namespace WebAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "Staff")]
+        [Authorize(Roles = "Staff,Technician")]
         [HttpPut("schedules/{id}")]
         public async Task<ActionResult> UpdateSchedule(int id, [FromBody] UpdateMaintenanceScheduleDTO dto)
         {
