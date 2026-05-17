@@ -179,13 +179,14 @@ namespace Infrastructure.Repositories
             // Auto-renew: create next month schedule when Auto schedule is completed
             if (dto.Status == "Completed" && schedule.ScheduleMode == "Auto")
             {
+                var nextStart = schedule.EndDate ?? DateTime.UtcNow;
                 var newSchedule = new MaintenanceSchedule
                 {
                     SensorId = schedule.SensorId,
                     ScheduleType = schedule.ScheduleType,
                     ScheduleMode = "Auto",
-                    StartDate = DateTime.UtcNow,
-                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    StartDate = nextStart,
+                    EndDate = nextStart.AddMonths(1),
                     AssignedTechnicianId = schedule.AssignedTechnicianId,
                     Status = "Scheduled",
                     CreatedAt = DateTime.UtcNow
