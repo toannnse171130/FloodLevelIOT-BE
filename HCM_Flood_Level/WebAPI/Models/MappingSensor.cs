@@ -13,6 +13,8 @@ namespace WebAPI.Models
                 .ForMember(a => a.SensorId, a => a.MapFrom(b => b.SensorId))
                 .ForMember(a => a.SensorName, a => a.MapFrom(b => b.SensorName))
                 .ForMember(a => a.Title, a => a.MapFrom(b => b.Location != null ? b.Location.Title : null))
+                .ForMember(a => a.Latitude, a => a.MapFrom(b => b.Location != null ? (double)b.Location.Latitude : 0))
+                .ForMember(a => a.Longitude, a => a.MapFrom(b => b.Location != null ? (double)b.Location.Longitude : 0))
                 .ForMember(a => a.InstalledAt, a => a.MapFrom(b => b.InstalledAt))
                 .ForMember(d => d.Status, opt => opt.MapFrom((src, dest, destMember, ctx) =>
                 {

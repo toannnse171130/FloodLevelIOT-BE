@@ -12,6 +12,8 @@ namespace Core.DTOs
         public int SensorId { get; set; }
         public string SensorName { get; set; }
         public string Title { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public DateTime? InstalledAt { get; set; }
         public string? Status { get; set; }
         public double? WaterLevel { get; set; }
