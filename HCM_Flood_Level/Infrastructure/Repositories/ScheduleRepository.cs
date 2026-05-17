@@ -179,20 +179,27 @@ namespace Infrastructure.Repositories
             // Auto-renew: create next month schedule when Auto schedule is completed
             if (dto.Status == "Completed" && schedule.ScheduleMode == "Auto")
             {
-                var nextStart = schedule.EndDate ?? DateTime.UtcNow;
-                var newSchedule = new MaintenanceSchedule
+                var hasPending = await _context.MaintenanceSchedules.AnyAsync(s =>
+                    s.SensorId == schedule.SensorId && s.ScheduleId != schedule.ScheduleId
+                    && s.Status != "Completed" && s.ScheduleMode == "Auto");
+
+                if (!hasPending)
                 {
-                    SensorId = schedule.SensorId,
-                    ScheduleType = schedule.ScheduleType,
-                    ScheduleMode = "Auto",
-                    StartDate = nextStart,
-                    EndDate = nextStart.AddMonths(1),
-                    AssignedTechnicianId = schedule.AssignedTechnicianId,
-                    Status = "Scheduled",
-                    CreatedAt = DateTime.UtcNow
-                };
-                await _context.MaintenanceSchedules.AddAsync(newSchedule);
-                await _context.SaveChangesAsync();
+                    var nextStart = schedule.EndDate ?? DateTime.UtcNow;
+                    var newSchedule = new MaintenanceSchedule
+                    {
+                        SensorId = schedule.SensorId,
+                        ScheduleType = schedule.ScheduleType,
+                        ScheduleMode = "Auto",
+                        StartDate = nextStart,
+                        EndDate = nextStart.AddMonths(1),
+                        AssignedTechnicianId = schedule.AssignedTechnicianId,
+                        Status = "Scheduled",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _context.MaintenanceSchedules.AddAsync(newSchedule);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             return true;
