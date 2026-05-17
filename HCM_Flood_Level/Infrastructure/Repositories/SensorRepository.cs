@@ -219,10 +219,13 @@ namespace Infrastructure.Repositories
             if (sensor == null)
                 return null;
 
-            var hasRequests = await _context.MaintenanceRequests.AnyAsync(m => m.SensorId == id);
-            var hasSchedules = await _context.MaintenanceSchedules.AnyAsync(s => s.SensorId == id);
-            if (hasRequests || hasSchedules)
-                return false;
+            var schedules = await _context.MaintenanceSchedules.Where(s => s.SensorId == id).ToListAsync();
+            if (schedules.Any())
+                _context.MaintenanceSchedules.RemoveRange(schedules);
+
+            var requests = await _context.MaintenanceRequests.Where(m => m.SensorId == id).ToListAsync();
+            if (requests.Any())
+                _context.MaintenanceRequests.RemoveRange(requests);
 
             _context.Sensors.Remove(sensor);
             await _context.SaveChangesAsync();
