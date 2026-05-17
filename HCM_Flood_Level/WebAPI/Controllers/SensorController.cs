@@ -124,6 +124,10 @@ namespace WebAPI.Controllers
                 if (dto.Latitude == 0 || dto.Longitude == 0)
                     return BadRequest(new BaseCommentResponse(400, "Vĩ độ và kinh độ là bắt buộc"));
 
+                var existingSensor = await _unitOfWork.ManageSensorRepository.GetByDeviceId(dto.SensorCode);
+                if (existingSensor != null)
+                    return BadRequest(new BaseCommentResponse(400, "Mã thiết bị đã tồn tại trong hệ thống"));
+
                 var sensorId = await _unitOfWork.ManageSensorRepository.AddNewSensorAsync(dto);
 
                 if (sensorId == 0)
