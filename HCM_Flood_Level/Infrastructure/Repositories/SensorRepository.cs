@@ -178,7 +178,7 @@ namespace Infrastructure.Repositories
             if (dto.MaxLevel.HasValue)
                 sensor.MaxLevel = dto.MaxLevel.Value;
 
-            if (dto.Latitude.HasValue || dto.Longitude.HasValue)
+            if (dto.Latitude.HasValue || dto.Longitude.HasValue || !string.IsNullOrEmpty(dto.Title) || !string.IsNullOrEmpty(dto.Address))
             {
                 var location = await _context.Locations.FindAsync(sensor.PlaceId);
                 if (location != null)
@@ -187,6 +187,10 @@ namespace Infrastructure.Repositories
                         location.Latitude = dto.Latitude.Value;
                     if (dto.Longitude.HasValue)
                         location.Longitude = dto.Longitude.Value;
+                    if (!string.IsNullOrEmpty(dto.Title))
+                        location.Title = dto.Title;
+                    if (!string.IsNullOrEmpty(dto.Address))
+                        location.Address = dto.Address;
                 }
             }
 
