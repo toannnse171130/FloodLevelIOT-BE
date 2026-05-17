@@ -84,6 +84,8 @@ namespace Core.DTOs
         public double? WarningThreshold { get; set; }
         public double? DangerThreshold { get; set; }
         public int? MaxLevel { get; set; }
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
     }
 
     public class SensorAreaDTO

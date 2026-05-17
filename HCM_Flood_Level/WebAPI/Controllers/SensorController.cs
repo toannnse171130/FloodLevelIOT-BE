@@ -157,7 +157,9 @@ namespace WebAPI.Controllers
                     string.IsNullOrEmpty(dto.SensorType) &&
                     !dto.WarningThreshold.HasValue &&
                     !dto.DangerThreshold.HasValue &&
-                    !dto.MaxLevel.HasValue)
+                    !dto.MaxLevel.HasValue &&
+                    !dto.Latitude.HasValue &&
+                    !dto.Longitude.HasValue)
                 {
                     return BadRequest(new BaseCommentResponse(400, "Cần cung cấp ít nhất một trường để cập nhật"));
                 }

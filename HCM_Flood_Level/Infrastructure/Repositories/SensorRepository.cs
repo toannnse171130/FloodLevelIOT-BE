@@ -178,6 +178,18 @@ namespace Infrastructure.Repositories
             if (dto.MaxLevel.HasValue)
                 sensor.MaxLevel = dto.MaxLevel.Value;
 
+            if (dto.Latitude.HasValue || dto.Longitude.HasValue)
+            {
+                var location = await _context.Locations.FindAsync(sensor.PlaceId);
+                if (location != null)
+                {
+                    if (dto.Latitude.HasValue)
+                        location.Latitude = dto.Latitude.Value;
+                    if (dto.Longitude.HasValue)
+                        location.Longitude = dto.Longitude.Value;
+                }
+            }
+
             await _context.SaveChangesAsync();
             return true;
         }
