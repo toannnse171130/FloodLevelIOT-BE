@@ -113,6 +113,21 @@ namespace Infrastructure.Repositories
             };
             await AddSensorReadingAsync(defaultReading);
 
+            // 5. Auto monthly maintenance schedule
+            var schedule = new MaintenanceSchedule
+            {
+                SensorId = sensor.SensorId,
+                ScheduleType = "Monthly",
+                ScheduleMode = "Auto",
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddMonths(1),
+                AssignedTechnicianId = dto.TechnicianId,
+                Status = "Scheduled",
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.MaintenanceSchedules.AddAsync(schedule);
+            await _context.SaveChangesAsync();
+
             return sensor.SensorId;
         }
 
