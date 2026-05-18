@@ -222,6 +222,20 @@ namespace Infrastructure.Services
             // để đảm bảo tính nhất quán (consistency) giữa Dự báo AI (Forecast) và Tìm đường (Routing).
             // Tìm tuyến đường giờ đây sẽ CHỈ cảnh báo khi cảm biến IoT thực tế tại khu vực đó đang báo ngập.
 
+            // Thêm fake sensor ngập cao để test chuyển tuyến đường
+            flooded.Add(new FloodSensor
+            {
+                SensorId = 99999,
+                SensorName = "Cảm biến Test Ngập Cao",
+                Severity = "Danger",
+                WaterLevelCm = 60,
+                WarningThresholdCm = 20,
+                DangerThresholdCm = 50,
+                ReadingStatus = "Online",
+                Latitude = 10.7769,
+                Longitude = 106.7009
+            });
+
             return flooded;
         }
 
