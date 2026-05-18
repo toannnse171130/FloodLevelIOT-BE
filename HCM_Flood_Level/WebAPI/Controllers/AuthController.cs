@@ -45,20 +45,34 @@ namespace WebAPI.Controllers
                 if (login == null)
                     return BadRequest(new BaseCommentResponse(400, "Thiếu thông tin đăng nhập"));
 
-                if (string.IsNullOrWhiteSpace(login.Email))
-                    return BadRequest(new BaseCommentResponse(400, "Email là bắt buộc"));
-
-                if (!new EmailAddressAttribute().IsValid(login.Email))
-                    return BadRequest(new BaseCommentResponse(400, "Định dạng email không hợp lệ"));
-
                 if (string.IsNullOrWhiteSpace(login.Password))
                     return BadRequest(new BaseCommentResponse(400, "Mật khẩu là bắt buộc"));
 
-                var authFailMsg = "Email hoặc mật khẩu không đúng";
+                var hasPhone = !string.IsNullOrWhiteSpace(login.PhoneNumber);
+                var hasEmail = !string.IsNullOrWhiteSpace(login.Email);
 
-                var log = await _context.Users
-                    .Include(u => u.Role)
-                    .FirstOrDefaultAsync(u => u.Email == login.Email);
+                if (!hasPhone && !hasEmail)
+                    return BadRequest(new BaseCommentResponse(400, "Nhập số điện thoại hoặc email"));
+
+                if (hasEmail && !new EmailAddressAttribute().IsValid(login.Email!))
+                    return BadRequest(new BaseCommentResponse(400, "Định dạng email không hợp lệ"));
+
+                var authFailMsg = "Số điện thoại/email hoặc mật khẩu không đúng";
+
+                User? log = null;
+                if (hasPhone)
+                {
+                    var phone = NormalizePhone(login.PhoneNumber!);
+                    log = await _context.Users
+                        .Include(u => u.Role)
+                        .FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+                }
+                else
+                {
+                    log = await _context.Users
+                        .Include(u => u.Role)
+                        .FirstOrDefaultAsync(u => u.Email == login.Email);
+                }
 
                 if (log == null)
                     return Unauthorized(new BaseCommentResponse(401, authFailMsg));
@@ -78,6 +92,14 @@ namespace WebAPI.Controllers
             {
                 return StatusCode(500, new BaseCommentResponse(500, $"Đã xảy ra lỗi máy chủ nội bộ!!! Chi tiết: {ex.Message}"));
             }
+        }
+
+        private static string NormalizePhone(string input)
+        {
+            var digits = new string(input.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("84") && digits.Length >= 11)
+                digits = "0" + digits[2..];
+            return digits;
         }
 
         [HttpPost("logout")]

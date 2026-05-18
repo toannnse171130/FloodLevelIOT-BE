@@ -46,6 +46,7 @@ namespace Infrastructure.Services
             double latitude,
             double longitude,
             double radiusKm = 3.0,
+            int? dataDaysBack = null,
             CancellationToken cancellationToken = default)
         {
             if (latitude is < -90 or > 90 || longitude is < -180 or > 180)
@@ -116,13 +117,17 @@ namespace Infrastructure.Services
                 .Where(s => readingsBySensorId.ContainsKey(s.SensorId))
                 .ToList();
 
-            var fiveYearsAgo = DateTime.UtcNow.AddYears(-5);
+            var daysBack = dataDaysBack is > 0 and <= 3650 ? dataDaysBack.Value : 7;
+            var historySince = DateTime.UtcNow.AddDays(-daysBack);
             var histories = await _context.Histories
                 .AsNoTracking()
-                .Where(h => placeIds.Contains(h.LocationId) && h.StartTime >= fiveYearsAgo)
+                .Where(h => placeIds.Contains(h.LocationId) && h.StartTime >= historySince)
                 .OrderByDescending(h => h.StartTime)
-                .Take(200) // Mở rộng lấy dữ liệu trong 5 năm gần đây
+                .Take(200)
                 .ToListAsync(cancellationToken);
+
+            if (activeSensors.Count == 0)
+                return null;
 
             var inputsObject = new
             {
@@ -210,7 +215,7 @@ namespace Infrastructure.Services
                 ? "Không có tóm tắt từ mô hình. Xem trường forecastDataJson."
                 : ai!.Summary.Trim();
 
-            var modelName = _configuration["Gemini:Model"] ?? "gemini-1.5-flash";
+            var modelName = _configuration["Gemini:Model"] ?? "gemini-2.0-flash";
             using var inputsDoc = JsonDocument.Parse(inputsJson);
             using var aiDoc = JsonDocument.Parse(normalized);
             var fullPayload = new Dictionary<string, object?>
@@ -259,7 +264,7 @@ namespace Infrastructure.Services
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new InvalidOperationException("Chưa cấu hình Gemini API key (Gemini:ApiKey hoặc GEMINI_API_KEY).");
 
-            var model = (_configuration["Gemini:Model"] ?? "gemini-1.5-flash").Trim();
+            var model = (_configuration["Gemini:Model"] ?? "gemini-2.0-flash").Trim();
             var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
 
             var body = new Dictionary<string, object?>

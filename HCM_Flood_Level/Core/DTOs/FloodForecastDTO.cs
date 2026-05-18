@@ -8,6 +8,8 @@ namespace Core.DTOs
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public double RadiusKm { get; set; } = 3.0;
+        /// <summary>Số ngày lùi để lấy lịch sử cho AI (admin/mobile cấu hình). Mặc định 7.</summary>
+        public int? DataDaysBack { get; set; }
     }
 
     public class FloodForecastResponseDto

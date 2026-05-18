@@ -17,6 +17,9 @@ services:
       - Jwt__Issuer=FloodLevelHCM
       - Jwt__Audience=FloodLevelHCMUsers
       - Jwt__ExpiresMinutes=60
+      # Google AI (Gemini) — set GEMINI_API_KEY in shell or a local .env loaded by Compose
+      - Gemini__ApiKey=${GEMINI_API_KEY:-}
+      - Gemini__Model=${GEMINI_MODEL:-gemini-2.0-flash}
     restart: unless-stopped
     networks:
       - floodlevel-network

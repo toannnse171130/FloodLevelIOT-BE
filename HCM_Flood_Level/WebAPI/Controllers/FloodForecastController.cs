@@ -34,6 +34,7 @@ namespace WebAPI.Controllers
                     dto.Latitude,
                     dto.Longitude,
                     radiusKm,
+                    dto.DataDaysBack,
                     cancellationToken);
                 if (result == null)
                     return BadRequest(new BaseCommentResponse(400, "Không thể khởi tạo mô hình dự báo (tọa độ không hợp lệ)."));

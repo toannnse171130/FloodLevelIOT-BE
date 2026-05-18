@@ -10,6 +10,7 @@ namespace Core.Interfaces
             double latitude,
             double longitude,
             double radiusKm = 3.0,
+            int? dataDaysBack = null,
             CancellationToken cancellationToken = default);
     }
 }

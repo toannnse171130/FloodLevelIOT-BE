@@ -29,7 +29,7 @@ public class FloodForecastControllerTest
             Recommendations = new List<string> { "Monitor local alerts." },
             CreatedAtUtc = DateTime.UtcNow
         };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 5.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 5.0, A<int?>._, A<CancellationToken>._))
             .Returns(response);
         var controller = new FloodForecastController(_floodForecastService);
 
@@ -43,7 +43,7 @@ public class FloodForecastControllerTest
     public async Task GetFloodForecast_WithInvalidAreaId_ReturnsNotFound()
     {
         var dto = new FloodForecastRequestDto { Latitude = 10.8, Longitude = 106.6, RadiusKm = 2 };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<int?>._, A<CancellationToken>._))
             .Returns((FloodForecastResponseDto?)null);
         var controller = new FloodForecastController(_floodForecastService);
 
@@ -67,7 +67,7 @@ public class FloodForecastControllerTest
             Recommendations = new List<string>(),
             CreatedAtUtc = DateTime.UtcNow
         };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 3.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 3.0, A<int?>._, A<CancellationToken>._))
             .Returns(response);
         var controller = new FloodForecastController(_floodForecastService);
 
@@ -91,7 +91,7 @@ public class FloodForecastControllerTest
             ConfidenceNote = "Based on recent sensor and rainfall signals.",
             CreatedAtUtc = DateTime.UtcNow
         };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 4.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 4.0, A<int?>._, A<CancellationToken>._))
             .Returns(response);
         var controller = new FloodForecastController(_floodForecastService);
 
@@ -115,14 +115,14 @@ public class FloodForecastControllerTest
             Summary = "Historical context included in model run.",
             CreatedAtUtc = DateTime.UtcNow
         };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(10.0, 106.0, 3.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(10.0, 106.0, 3.0, A<int?>._, A<CancellationToken>._))
             .Returns(response);
         var controller = new FloodForecastController(_floodForecastService);
 
         var result = await controller.RunForecast(dto, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(10.0, 106.0, 3.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(10.0, 106.0, 3.0, A<int?>._, A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
     }
 
@@ -138,7 +138,7 @@ public class FloodForecastControllerTest
         var body = Assert.IsType<BaseCommentResponse>(bad.Value);
         Assert.Equal(400, body.Statuscodes);
         Assert.Equal("Payload không hợp lệ.", body.Message);
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<int?>._, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -155,7 +155,7 @@ public class FloodForecastControllerTest
         var body = Assert.IsType<BaseCommentResponse>(bad.Value);
         Assert.Equal(400, body.Statuscodes);
         Assert.Equal(InvalidCoordinateMessage, body.Message);
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<int?>._, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -172,7 +172,7 @@ public class FloodForecastControllerTest
         var body = Assert.IsType<BaseCommentResponse>(bad.Value);
         Assert.Equal(400, body.Statuscodes);
         Assert.Equal(InvalidCoordinateMessage, body.Message);
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(A<double>._, A<double>._, A<double>._, A<int?>._, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -182,7 +182,7 @@ public class FloodForecastControllerTest
     {
         const string message = "Forecast model unavailable.";
         var dto = new FloodForecastRequestDto { Latitude = 10.8, Longitude = 106.6, RadiusKm = 2 };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<int?>._, A<CancellationToken>._))
             .ThrowsAsync(new InvalidOperationException(message));
         var controller = new FloodForecastController(_floodForecastService);
 
@@ -200,7 +200,7 @@ public class FloodForecastControllerTest
     public async Task RunForecast_WhenServiceThrowsException_Returns500()
     {
         var dto = new FloodForecastRequestDto { Latitude = 10.8, Longitude = 106.6, RadiusKm = 2 };
-        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<CancellationToken>._))
+        A.CallTo(() => _floodForecastService.RunForecastForCitizenAsync(dto.Latitude, dto.Longitude, 2.0, A<int?>._, A<CancellationToken>._))
             .ThrowsAsync(new Exception("Unexpected error"));
         var controller = new FloodForecastController(_floodForecastService);
 

@@ -19,7 +19,6 @@ namespace Infrastructure.Repositories
         {
             var query = _context.Histories.AsQueryable();
 
-            // Search by Severity name when search term is provided
             if (!string.IsNullOrEmpty(param.Search))
                 query = query.Where(h => h.Severity.ToString().ToLower().Contains(param.Search));
 
@@ -31,7 +30,39 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IReadOnlyList<History>> GetFilteredAsync(int? placeId, int hours, int limit)
+        {
+            var query = _context.Histories.AsNoTracking().AsQueryable();
+
+            if (placeId.HasValue && placeId.Value > 0)
+                query = query.Where(h => h.LocationId == placeId.Value);
+
+            if (hours > 0)
+            {
+                var since = DateTime.UtcNow.AddHours(-hours);
+                query = query.Where(h => h.CreatedAt >= since || h.StartTime >= since);
+            }
+
+            query = query
+                .OrderByDescending(h => h.CreatedAt)
+                .ThenByDescending(h => h.StartTime);
+
+            if (limit > 0)
+                query = query.Take(limit);
+            else
+                query = query.Take(500);
+
+            return await query.ToListAsync();
+        }
+
         public async Task<int> CountAsync()
             => await _context.Histories.CountAsync();
+
+        public async Task<History> AddAsync(History history)
+        {
+            await _context.Histories.AddAsync(history);
+            await _context.SaveChangesAsync();
+            return history;
+        }
     }
 }
