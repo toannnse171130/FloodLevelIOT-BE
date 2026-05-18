@@ -18,6 +18,8 @@ namespace Core.DTOs
         public string? Status { get; set; }
         public double? WaterLevel { get; set; }
         public string? SignalStrength { get; set; }
+        public double WarningThreshold { get; set; }
+        public double DangerThreshold { get; set; }
     }
 
     public class SensorDTO
