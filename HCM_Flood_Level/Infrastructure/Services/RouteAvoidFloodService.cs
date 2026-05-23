@@ -82,6 +82,20 @@ namespace Infrastructure.Services
             if (routeAlternatives.Count == 0)
                 return new RouteAvoidFloodResponseDTO();
 
+            // MOCK: Luôn đảm bảo có ít nhất 2 route để test tính năng "Có tuyến thay thế"
+            if (routeAlternatives.Count == 1)
+            {
+                var decoded = DecodePolyline(routeAlternatives[0].OverviewPolylinePoints);
+                var fakePoints = decoded.Select(p => (p.lat + 0.0015, p.lng + 0.0015)).ToList();
+                routeAlternatives.Add(new RouteAlternativeInternal
+                {
+                    OverviewPolylinePoints = EncodePolyline(fakePoints),
+                    DistanceMeters = routeAlternatives[0].DistanceMeters + 500,
+                    DurationSeconds = routeAlternatives[0].DurationSeconds + 120,
+                    Warnings = new List<RouteFloodWarningDTO>()
+                });
+            }
+
             var primaryRoutePoly = routeAlternatives[0].OverviewPolylinePoints;
 
             // 2) Lấy sensor đang ngập theo dữ liệu latest reading và dữ liệu lịch sử AI dự kiến (2006-2026)
@@ -117,23 +131,68 @@ namespace Infrastructure.Services
                 .FirstOrDefault(r => r.OverviewPolylinePoints == recommended.OverviewPolylinePoints)?
                 .Warnings ?? new List<RouteFloodWarningDTO>();
 
-            // 2) Tìm các tuyến đường thay thế AN TOÀN HƠN hoặc KHÔNG NGẬP
-            var saferAlternatives = new List<RouteAlternativeDTO>();
-            if (recommended.IsFlooded)
+            // 2) Kiểm tra nếu recommended route có sensor ngập (Warning hoặc Danger)
+            //    - Nếu có: Set NeedsUserConfirmation = true, tìm route thay thế được suggest
+            //    - Ưu tiên route không có warning, nếu không có thì chọn route có ít warning nhất
+            bool needsUserConfirmation = false;
+            RouteAlternativeDTO? suggestedAlternative = null;
+            bool hasAnyFloodWarning = recommendedWarnings.Any(w => w.Severity == "Danger" || w.Severity == "Warning");
+
+            if (hasAnyFloodWarning)
             {
-                saferAlternatives = scoredAlternatives
-                    .Where(a => a.OverviewPolylinePoints != recommended.OverviewPolylinePoints && a.RiskScore < recommended.RiskScore)
-                    .OrderBy(a => a.RiskScore)
-                    .ThenBy(a => a.DurationSeconds ?? int.MaxValue)
+                var floodFreeAlternatives = scoredAlternatives
+                    .Where(a => a.OverviewPolylinePoints != recommended.OverviewPolylinePoints)
                     .ToList();
+
+                if (floodFreeAlternatives.Count > 0)
+                {
+                    needsUserConfirmation = true;
+                    
+                    // Ưu tiên route không có warning, sau đó sắp xếp theo số warnings và RiskScore
+                    suggestedAlternative = floodFreeAlternatives
+                        .OrderBy(a =>
+                        {
+                            var altWarnings = routeAlternatives
+                                .FirstOrDefault(r => r.OverviewPolylinePoints == a.OverviewPolylinePoints)?
+                                .Warnings ?? new List<RouteFloodWarningDTO>();
+                            // Đếm số warnings: route không có warning = 0
+                            var warningCount = altWarnings.Count(w => w.Severity == "Danger" || w.Severity == "Warning");
+                            return warningCount;
+                        })
+                        .ThenBy(a => a.RiskScore)
+                        .ThenBy(a => a.DurationSeconds ?? int.MaxValue)
+                        .FirstOrDefault();
+                }
+                else
+                {
+                    // Không có tuyến đường thay thế - trả về cảnh báo
+                    return new RouteAvoidFloodResponseDTO
+                    {
+                        RecommendedRoute = recommended,
+                        IsRecommendedRouteFlooded = true,
+                        RecommendedWarnings = recommendedWarnings,
+                        Alternatives = new List<RouteAlternativeDTO>(),
+                        NeedsUserConfirmation = false,
+                        Message = "Tất cả các tuyến đường đều bị ngập. Vui lòng chọn thời gian khác để đi hoặc liên hệ với cơ quan chức năng."
+                    };
+                }
             }
+
+            // 3) Tìm các tuyến đường thay thế (trừ recommended), sắp xếp theo RiskScore
+            var saferAlternatives = scoredAlternatives
+                .Where(a => a.OverviewPolylinePoints != recommended.OverviewPolylinePoints)
+                .OrderBy(a => a.RiskScore)
+                .ThenBy(a => a.DurationSeconds ?? int.MaxValue)
+                .ToList();
 
             return new RouteAvoidFloodResponseDTO
             {
                 RecommendedRoute = recommended,
                 IsRecommendedRouteFlooded = recommended.IsFlooded,
                 RecommendedWarnings = recommendedWarnings,
-                Alternatives = saferAlternatives
+                Alternatives = saferAlternatives,
+                NeedsUserConfirmation = needsUserConfirmation,
+                SuggestedAlternative = suggestedAlternative
             };
         }
 
@@ -147,6 +206,7 @@ namespace Infrastructure.Services
                                  {
                                      s.SensorId,
                                      s.SensorName,
+                                     s.PlaceId,
                                      s.WarningThreshold,
                                      s.DangerThreshold,
                                      l.Latitude,
@@ -625,6 +685,7 @@ namespace Infrastructure.Services
                     {
                         SensorId = sensor.SensorId,
                         SensorName = sensor.SensorName,
+                        PlaceId = sensor.PlaceId,
                         Severity = sensor.Severity,
                         MinDistanceMeters = minDist,
                         SensorLatitude = sensor.Latitude,
@@ -746,6 +807,7 @@ namespace Infrastructure.Services
         private sealed class FloodSensor
         {
             public int SensorId { get; set; }
+            public int PlaceId { get; set; }
             public string SensorName { get; set; } = string.Empty;
             public string Severity { get; set; } = string.Empty;
             public float WaterLevelCm { get; set; }

@@ -71,6 +71,13 @@ namespace WebAPI.Controllers
         {
             try
             {
+                if (dto.LocationId <= 0)
+                    return BadRequest(new BaseCommentResponse(400, "LocationId phải lớn hơn 0"));
+
+                var location = await _unitOfWork.LocationRepository.GetByIdAsync(dto.LocationId);
+                if (location == null)
+                    return BadRequest(new BaseCommentResponse(400, "Location không tồn tại"));
+
                 var history = new History
                 {
                     LocationId = dto.LocationId,
