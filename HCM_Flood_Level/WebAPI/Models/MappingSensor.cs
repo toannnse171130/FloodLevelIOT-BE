@@ -12,6 +12,7 @@ namespace WebAPI.Models
             CreateMap<Sensor, ManageSensorDTO>()
                 .ForMember(a => a.SensorId, a => a.MapFrom(b => b.SensorId))
                 .ForMember(a => a.SensorName, a => a.MapFrom(b => b.SensorName))
+                .ForMember(a => a.SensorCode, a => a.MapFrom(b => b.SensorCode))
                 .ForMember(a => a.Title, a => a.MapFrom(b => b.Location != null ? b.Location.Title : null))
                 .ForMember(a => a.Latitude, a => a.MapFrom(b => b.Location != null ? (double)b.Location.Latitude : 0))
                 .ForMember(a => a.Longitude, a => a.MapFrom(b => b.Location != null ? (double)b.Location.Longitude : 0))
@@ -21,7 +22,12 @@ namespace WebAPI.Models
                 .ForMember(d => d.Status, opt => opt.MapFrom((src, dest, destMember, ctx) =>
                 {
                     if (ctx.Items.TryGetValue("LatestReadings", out var obj) && obj is System.Collections.Generic.Dictionary<int, SensorReading> dict && dict.TryGetValue(src.SensorId, out var rd))
+                    {
+                        var isRealDevice = src.SensorCode == "ESP32_01";
+                        if (isRealDevice && rd?.RecordedAt != null && (DateTime.UtcNow - rd.RecordedAt).TotalMinutes > 2)
+                            return "Offline";
                         return rd?.Status;
+                    }
                     return null;
                 }))
                 .ForMember(d => d.WaterLevel, opt => opt.MapFrom((src, dest, destMember, ctx) =>
@@ -33,7 +39,12 @@ namespace WebAPI.Models
                 .ForMember(d => d.SignalStrength, opt => opt.MapFrom((src, dest, destMember, ctx) =>
                 {
                     if (ctx.Items.TryGetValue("LatestReadings", out var obj) && obj is System.Collections.Generic.Dictionary<int, SensorReading> dict && dict.TryGetValue(src.SensorId, out var rd))
+                    {
+                        var isRealDevice = src.SensorCode == "ESP32_01";
+                        if (isRealDevice && rd?.RecordedAt != null && (DateTime.UtcNow - rd.RecordedAt).TotalMinutes > 2)
+                            return "Không kết nối";
                         return rd?.SignalStrength;
+                    }
                     return null;
                 }));
 
@@ -66,7 +77,12 @@ namespace WebAPI.Models
                 .ForMember(d => d.Status, opt => opt.MapFrom((src, dest, destMember, ctx) =>
                 {
                     if (ctx.Items.TryGetValue("LatestReadings", out var obj) && obj is System.Collections.Generic.Dictionary<int, SensorReading> dict && dict.TryGetValue(src.SensorId, out var rd))
+                    {
+                        var isRealDevice = src.SensorCode == "ESP32_01";
+                        if (isRealDevice && rd?.RecordedAt != null && (DateTime.UtcNow - rd.RecordedAt).TotalMinutes > 2)
+                            return "Offline";
                         return rd?.Status;
+                    }
                     return null;
                 }))
                 .ForMember(d => d.RecordAt, opt => opt.MapFrom((src, dest, destMember, ctx) =>

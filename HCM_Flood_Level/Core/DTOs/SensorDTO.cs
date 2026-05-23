@@ -11,6 +11,7 @@ namespace Core.DTOs
     {
         public int SensorId { get; set; }
         public string SensorName { get; set; }
+        public string SensorCode { get; set; }
         public string Title { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }

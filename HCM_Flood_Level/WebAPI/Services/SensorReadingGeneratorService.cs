@@ -49,9 +49,16 @@ namespace WebAPI.Services
             var sensorIds = (await uow.ManageSensorRepository.GetAllSensorIdsAsync()).ToList();
             if (!sensorIds.Any()) return;
 
+            // Exclude real hardware sensors from mock data generation
+            var realSensorCodes = new HashSet<string> { "ESP32_01" };
+
             foreach (var sensorId in sensorIds)
             {
                 if (ct.IsCancellationRequested) break;
+
+                var sensorCheck = await uow.ManageSensorRepository.GetByIdAsync(sensorId);
+                if (sensorCheck != null && !string.IsNullOrEmpty(sensorCheck.SensorCode) && realSensorCodes.Contains(sensorCheck.SensorCode))
+                    continue;
 
                 // Generate values
                 var status = _rnd.NextDouble() > 0.05 ? "Online" : "Offline"; // mostly online
