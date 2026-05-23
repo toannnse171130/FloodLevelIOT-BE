@@ -249,7 +249,7 @@ namespace Infrastructure.Services
                     flooded.Add(new FloodSensor
                     {
                         SensorId = s.SensorId,
-                        PlaceId = s.PlaceId ?? 0,
+                        PlaceId = s.PlaceId,
                         SensorName = s.SensorName ?? string.Empty,
                         Severity = "Danger",
                         WaterLevelCm = water,
@@ -267,7 +267,7 @@ namespace Infrastructure.Services
                     flooded.Add(new FloodSensor
                     {
                         SensorId = s.SensorId,
-                        PlaceId = s.PlaceId ?? 0,
+                        PlaceId = s.PlaceId,
                         SensorName = s.SensorName ?? string.Empty,
                         Severity = "Warning",
                         WaterLevelCm = water,
