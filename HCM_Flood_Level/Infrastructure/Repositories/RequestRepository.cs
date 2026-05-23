@@ -102,15 +102,6 @@ namespace Infrastructure.Repositories
                          .Take(entityParam.Pagesize)
                          .ToListAsync();
 
-            // Nếu status thực tế là InProgress thì Staff sẽ thấy là Assigned
-            foreach (var r in requests)
-            {
-                if (r.Status == "InProgress")
-                {
-                    r.Status = "Assigned";
-                }
-            }
-
             return requests;
         }
 
@@ -187,12 +178,6 @@ namespace Infrastructure.Repositories
                 .OrderBy(r => r.Status == "Pending" ? 0 : r.Status == "Assigned" ? 1 : r.Status == "InProgress" ? 2 : r.Status == "Completed" ? 3 : r.Status == "Cancelled" ? 4 : 5)
                 .ThenByDescending(r => r.CreatedAt)
                 .ToListAsync();
-
-            foreach (var r in requests)
-            {
-                if (r.Status == "InProgress")
-                    r.Status = "Assigned";
-            }
 
             return requests;
         }
