@@ -249,6 +249,7 @@ namespace Infrastructure.Services
                     flooded.Add(new FloodSensor
                     {
                         SensorId = s.SensorId,
+                        PlaceId = s.PlaceId ?? 0,
                         SensorName = s.SensorName ?? string.Empty,
                         Severity = "Danger",
                         WaterLevelCm = water,
@@ -266,6 +267,7 @@ namespace Infrastructure.Services
                     flooded.Add(new FloodSensor
                     {
                         SensorId = s.SensorId,
+                        PlaceId = s.PlaceId ?? 0,
                         SensorName = s.SensorName ?? string.Empty,
                         Severity = "Warning",
                         WaterLevelCm = water,
@@ -286,6 +288,7 @@ namespace Infrastructure.Services
             flooded.Add(new FloodSensor
             {
                 SensorId = 99999,
+                PlaceId = 99999,
                 SensorName = "Cảm biến Test Ngập Cao",
                 Severity = "Danger",
                 WaterLevelCm = 60,
