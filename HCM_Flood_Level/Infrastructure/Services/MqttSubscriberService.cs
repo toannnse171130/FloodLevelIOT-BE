@@ -3,16 +3,28 @@ using MQTTnet.Client;
 using System.Text;
 using System.Text.Json;
 using Core.DTOs;
-using Microsoft.Extensions.DependencyInjection;
 using Core.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Infrastructure.Hubs;
 
-public class MqttSubscriberService
+/// <summary>
+/// Hosted service subscribe MQTT (HiveMQ) và ghi sensor reading vào DB.
+/// Triển khai IHostedService để host giữ reference suốt vòng đời app —
+/// nếu để client là biến local, GC sẽ thu hồi và ngừng nhận message.
+/// </summary>
+public class MqttSubscriberService : IHostedService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
+
+    // Giữ client thành field để không bị Garbage Collector thu hồi → MQTT ngừng nhận message.
+    private IMqttClient? _mqttClient;
+    private MqttClientOptions? _options;
+    // Cờ chặn vòng reconnect khi app đang shutdown.
+    private bool _stopping;
 
     // Buffer giữ 10 MQTT message gần nhất để debug
     private static readonly LinkedList<string> _recentMessages = new();
@@ -36,7 +48,7 @@ public class MqttSubscriberService
         }
     }
 
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         var mqttConfig = _configuration.GetSection("Mqtt");
         var host = mqttConfig["Host"];
@@ -56,9 +68,9 @@ public class MqttSubscriberService
         if (string.IsNullOrWhiteSpace(topic)) topic = "flood/+/telemetry";
 
         var factory = new MqttFactory();
-        var client = factory.CreateMqttClient();
+        _mqttClient = factory.CreateMqttClient();
 
-            var optionsBuilder = new MqttClientOptionsBuilder()
+        var optionsBuilder = new MqttClientOptionsBuilder()
             .WithTcpServer(host, port);
 
         if (!string.IsNullOrEmpty(username))
@@ -78,9 +90,9 @@ public class MqttSubscriberService
             });
         }
 
-        var options = optionsBuilder.Build();
+        _options = optionsBuilder.Build();
 
-        client.ApplicationMessageReceivedAsync += async e =>
+        _mqttClient.ApplicationMessageReceivedAsync += async e =>
         {
             try
             {
@@ -95,9 +107,9 @@ public class MqttSubscriberService
                         _recentMessages.RemoveLast();
                 }
 
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var data = JsonSerializer.Deserialize<MqttPayload>(payload, options);
-                
+                var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var data = JsonSerializer.Deserialize<MqttPayload>(payload, jsonOptions);
+
                 if (data != null && !string.IsNullOrEmpty(data.DeviceId))
                 {
                     using var scope = _serviceProvider.CreateScope();
@@ -122,13 +134,19 @@ public class MqttSubscriberService
             }
         };
 
-        client.DisconnectedAsync += async e =>
+        _mqttClient.DisconnectedAsync += async e =>
         {
+            if (_stopping) return; // app đang shutdown, không reconnect
             Console.WriteLine("MQTT Disconnected. Retrying in 5 seconds...");
             await Task.Delay(TimeSpan.FromSeconds(5));
             try
             {
-                await client.ConnectAsync(options);
+                if (!_stopping && _mqttClient != null && _options != null)
+                {
+                    await _mqttClient.ConnectAsync(_options);
+                    await _mqttClient.SubscribeAsync(topic);
+                    Console.WriteLine($"MQTT Reconnected and Subscribed to {topic}");
+                }
             }
             catch
             {
@@ -138,13 +156,32 @@ public class MqttSubscriberService
 
         try
         {
-            await client.ConnectAsync(options);
-            await client.SubscribeAsync(topic);
+            await _mqttClient.ConnectAsync(_options, cancellationToken);
+            await _mqttClient.SubscribeAsync(topic, cancellationToken: cancellationToken);
             Console.WriteLine($"MQTT Connected to {host}:{port} and Subscribed to {topic}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"MQTT Connection failed: {ex.Message}");
+        }
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _stopping = true;
+        if (_mqttClient != null)
+        {
+            try
+            {
+                if (_mqttClient.IsConnected)
+                    await _mqttClient.DisconnectAsync();
+            }
+            catch
+            {
+                // ignore lỗi disconnect khi shutdown
+            }
+            _mqttClient.Dispose();
+            _mqttClient = null;
         }
     }
 }

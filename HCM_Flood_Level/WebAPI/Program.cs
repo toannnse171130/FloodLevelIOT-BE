@@ -170,11 +170,10 @@ builder.Services
 builder.Services.AddScoped<IEmailProvider, SmtpEmailProvider>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
-var app = builder.Build();
+// MQTT subscriber chạy như hosted service → host giữ reference, client không bị GC thu hồi.
+builder.Services.AddHostedService<MqttSubscriberService>();
 
-//  MQTT chạy sau khi app build
-var mqttService = new MqttSubscriberService(app.Services, app.Configuration);
-await mqttService.StartAsync();
+var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 // Enable Swagger in all environments for API documentation
