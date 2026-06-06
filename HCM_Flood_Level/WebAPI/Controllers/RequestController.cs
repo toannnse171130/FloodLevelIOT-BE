@@ -72,6 +72,25 @@ namespace WebAPI.Controllers
         }
 
         [Authorize(Roles = "Staff")]
+        [HttpPut("staff-requests/{id}")]
+        public async Task<IActionResult> StaffUpdateRequestAsync(int id, [FromBody] StaffUpdateRequestDTO dto)
+        {
+            try
+            {
+                if (dto == null)
+                    return BadRequest(new BaseCommentResponse(400, "Dữ liệu cập nhật là bắt buộc"));
+                var result = await _unitOfWork.ManageRequestRepository.StaffUpdateRequestAsync(id, dto);
+                if (!result)
+                    return NotFound(new BaseCommentResponse(404, "Yêu cầu bảo trì không tồn tại"));
+                return Ok(new BaseCommentResponse(200, "Cập nhật yêu cầu bảo trì thành công"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(400, new BaseCommentResponse(400, ex.Message));
+            }
+        }
+
+        [Authorize(Roles = "Staff")]
         [HttpDelete("staff-requests/{id}")]
         public async Task<IActionResult> StaffDeleteRequestAsync(int id)
         {

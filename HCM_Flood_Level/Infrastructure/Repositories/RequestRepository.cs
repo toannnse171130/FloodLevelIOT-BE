@@ -67,6 +67,45 @@ namespace Infrastructure.Repositories
             return result > 0;
         }
 
+        public async Task<bool> StaffUpdateRequestAsync(int requestId, StaffUpdateRequestDTO dto)
+        {
+            var request = await _context.MaintenanceRequests.FindAsync(requestId);
+            if (request == null) return false;
+
+            // Can't edit a request that's already finished
+            if (request.Status == "Completed" || request.Status == "Cancelled")
+                throw new Exception("Không thể sửa yêu cầu đã hoàn thành hoặc đã hủy.");
+
+            if (dto.Priorityid.HasValue)
+            {
+                var priorityExist = await _context.Priorities.AnyAsync(p => p.PriorityId == dto.Priorityid.Value);
+                if (!priorityExist) throw new Exception("Độ ưu tiên không tồn tại");
+                request.PriorityId = dto.Priorityid.Value;
+            }
+
+            if (dto.AssignedTechnicianTo.HasValue)
+            {
+                var technician = await _context.Users.Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.UserId == dto.AssignedTechnicianTo.Value);
+                if (technician == null) throw new Exception("Kỹ thuật viên không tồn tại");
+                if (technician.Role?.RoleName != "Technician" && technician.RoleId != 3)
+                    throw new Exception($"Người dùng {technician.FullName} không có vai trò Kỹ thuật viên");
+                request.AssignedTechnicianTo = dto.AssignedTechnicianTo.Value;
+            }
+
+            if (dto.Description != null)
+                request.Description = dto.Description;
+
+            if (dto.Note != null)
+                request.Note = dto.Note;
+
+            if (dto.Deadline.HasValue)
+                request.Deadline = DateTime.SpecifyKind(dto.Deadline.Value, DateTimeKind.Utc);
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<bool> StaffDeleteRequestAsync(int requestId)
         {
             var request = await _context.MaintenanceRequests.FindAsync(requestId);

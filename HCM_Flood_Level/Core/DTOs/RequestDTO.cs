@@ -36,4 +36,14 @@ namespace Core.DTOs
     {
         public string Status { get; set; }
     }
+
+    // Staff edits an existing maintenance request (partial update). Status is managed by technician separately.
+    public class StaffUpdateRequestDTO
+    {
+        public int? Priorityid { get; set; }
+        public int? AssignedTechnicianTo { get; set; }
+        public string? Description { get; set; }
+        public DateTime? Deadline { get; set; }
+        public string? Note { get; set; }
+    }
 }

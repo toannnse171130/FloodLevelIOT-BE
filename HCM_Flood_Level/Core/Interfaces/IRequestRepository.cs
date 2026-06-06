@@ -15,6 +15,7 @@ namespace Core.Interfaces
         Task<IEnumerable<MaintenanceRequest>> StaffGetRequestAsync(EntityParam entityParam);
         Task<IEnumerable<MaintenanceRequest>> TechnicianGetRequestAsync(int technicianId, EntityParam entityParam);
         Task<bool> TechnicianUpdateStatusAsync(int requestId, TechnicianUpdateStatusDTO dto);
+        Task<bool> StaffUpdateRequestAsync(int requestId, StaffUpdateRequestDTO dto);
         Task<bool> StaffDeleteRequestAsync(int requestId);
         Task<IEnumerable<MaintenanceRequest>> GetBySensorIdAsync(int sensorId);
         Task<IEnumerable<MaintenanceRequest>> GetByAssignedTechnicianIdAsync(int technicianId);
