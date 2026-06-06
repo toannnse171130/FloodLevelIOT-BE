@@ -42,6 +42,15 @@ namespace Infrastructure.Repositories
                 .FirstOrDefaultAsync(x => x.SensorCode == sensordcode);
         }
 
+        public async Task<Sensor> GetByIdWithDetailsAsync(int id)
+        {
+            return await _context.Sensors
+                .Include(s => s.Location)
+                    .ThenInclude(l => l.Area)
+                .Include(s => s.Technician)
+                .FirstOrDefaultAsync(s => s.SensorId == id);
+        }
+
 
         public async Task<IEnumerable<Sensor>> GetAllSensorsAsync(EntityParam param)
         {
@@ -150,11 +159,37 @@ namespace Infrastructure.Repositories
 
             if (dto.PlaceId.HasValue)
             {
-                var locationExists = await _context.Locations.AnyAsync(l => l.PlaceId == dto.PlaceId.Value);
-                if (!locationExists)
+                // Client sends the AreaId in PlaceId. A Sensor points to a Location (not an Area),
+                // so resolve the area to a concrete Location via find-or-create, mirroring sensor creation.
+                var areaId = dto.PlaceId.Value;
+                var areaExists = await _context.Areas.AnyAsync(a => a.AreaId == areaId);
+                if (!areaExists)
                     return false;
 
-                sensor.PlaceId = dto.PlaceId.Value;
+                var currentLocation = await _context.Locations.FindAsync(sensor.PlaceId);
+                var lat = dto.Latitude ?? currentLocation?.Latitude ?? 0m;
+                var lng = dto.Longitude ?? currentLocation?.Longitude ?? 0m;
+                var title = !string.IsNullOrEmpty(dto.Title) ? dto.Title : (currentLocation?.Title ?? "Unknown");
+                var address = !string.IsNullOrEmpty(dto.Address) ? dto.Address : (currentLocation?.Address ?? "Unknown");
+
+                var location = await _context.Locations
+                    .FirstOrDefaultAsync(l => l.AreaId == areaId && l.Latitude == lat && l.Longitude == lng);
+
+                if (location == null)
+                {
+                    location = new Location
+                    {
+                        AreaId = areaId,
+                        Title = title,
+                        Address = address,
+                        Latitude = lat,
+                        Longitude = lng
+                    };
+                    await _context.Locations.AddAsync(location);
+                    await _context.SaveChangesAsync();
+                }
+
+                sensor.PlaceId = location.PlaceId;
             }
 
             if (dto.TechnicianId.HasValue)

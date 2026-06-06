@@ -29,5 +29,8 @@ namespace Core.Interfaces
         //24/03 - for SensorController GetById and GetByDeviceId
         Task<Sensor> GetByIdAsync(int id);
         Task<Sensor> GetByDeviceId(string deviceId);
+
+        // Loads sensor with Location + Location.Area (for AreaName) + Technician
+        Task<Sensor> GetByIdWithDetailsAsync(int id);
     }
 }

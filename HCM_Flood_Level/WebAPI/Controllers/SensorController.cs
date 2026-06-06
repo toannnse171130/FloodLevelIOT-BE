@@ -72,9 +72,7 @@ namespace WebAPI.Controllers
                 if (id <= 0)
                     return BadRequest(new BaseCommentResponse(400, "ID thiết bị không hợp lệ"));
 
-                var sensor = await _unitOfWork.ManageSensorRepository.GetByIdAsync(id,
-                    s => s.Location,
-                    s => s.Technician);
+                var sensor = await _unitOfWork.ManageSensorRepository.GetByIdWithDetailsAsync(id);
 
                 if (sensor == null)
                     return NotFound(new BaseCommentResponse(404, "Không tìm thấy thiết bị"));

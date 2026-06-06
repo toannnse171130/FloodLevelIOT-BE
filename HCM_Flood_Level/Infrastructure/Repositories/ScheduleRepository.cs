@@ -185,7 +185,9 @@ namespace Infrastructure.Repositories
 
                 if (!hasPending)
                 {
-                    var nextStart = schedule.EndDate ?? DateTime.UtcNow;
+                    // Next cycle starts from the actual completion moment, not the planned EndDate,
+                    // so early/late completion shifts the whole cycle (e.g. done 20/6 -> 20/6..20/7)
+                    var nextStart = DateTime.UtcNow;
                     var newSchedule = new MaintenanceSchedule
                     {
                         SensorId = schedule.SensorId,
